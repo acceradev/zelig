@@ -1,0 +1,13 @@
+aiohttp==2.0.5
+async-timeout==1.2.0
+chardet==2.3.0
+multidict==2.1.4
+PyYAML==3.12
+six==1.10.0
+vcrpy==1.10.5
+virtualenv==15.0.3
+wrapt==1.10.10
+yarl==0.10.0
+
+# TODO: remove
+pydevd
