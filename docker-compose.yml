@@ -12,5 +12,3 @@ services:
      - ZELIG_HOST=0.0.0.0
      - ZELIG_PORT=8081
      - ZELIG_MODE=client
-     - ZELIG_CLIENT_REPORT=/app/report.yml
-     - ZELIG_CASSETTE_FILE=/app/cassette_file.yml
