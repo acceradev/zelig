@@ -2,6 +2,7 @@ class ZeligMode:
     PROXY = 'proxy'
     SERVER = 'server'
     CLIENT = 'client'
+    OBSERVER = 'observer'
 
 
 class RecordMode:

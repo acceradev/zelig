@@ -11,6 +11,4 @@ services:
      - TARGET_SERVER_BASE_URL=http://172.17.0.1:8000
      - ZELIG_HOST=0.0.0.0
      - ZELIG_PORT=8081
-     - ZELIG_MODE=client
-     - ZELIG_CLIENT_REPORT=/app/report.yml
-     - ZELIG_CASSETTE_FILE=/app/cassette_file.yml
+     - ZELIG_MODE=observer
