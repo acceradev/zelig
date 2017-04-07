@@ -2,7 +2,7 @@ class ResponseMatchers:
 
     @staticmethod
     def status(r1, r2):
-        return r1.get('host') == r2.get('host')
+        return r1.get('status') == r2.get('status')
 
     @staticmethod
     def body(r1, r2):
