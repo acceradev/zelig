@@ -14,7 +14,8 @@ from vcr.persisters.filesystem import FilesystemPersister
 
 from config import config_app
 from constants import ZeligMode, RecordMode
-from report import save_client_report, get_report
+from report import save_report
+from matchers import match_responses
 from utils import (
     extract_response_info, extract_request_info, extract_vcr_request_info, get_response_from_cassette, Observer, wait
 )
@@ -39,39 +40,43 @@ async def simulate_client(app, loop):
         # TODO: handle errors that may occur
         async with aiohttp.ClientSession(loop=loop) as session:
             async with session.request(**request_info) as response:
-                response_info = await extract_response_info(response)
-                # TODO: move to const
-                report = get_report(request_info, original_response, response_info, app['RESPONSE_MATCH_ON'])
-                match_results.append(report)
+                received_response = await extract_response_info(response)
+                match = match_responses(original_response, received_response, app['RESPONSE_MATCH_ON'])
+                match_results.append({
+                    'request': request,
+                    'original_response': original_response,
+                    'received_response': received_response,
+                    'result': 'Responses {}'.format('match' if match else 'mismatch')
+                })
     # TODO: move save somewhere else
-    save_client_report(app['ZELIG_CLIENT_REPORT'], match_results)
+    save_report(app['ZELIG_CLIENT_REPORT'], match_results)
 
 
 async def observe(request, cassette, observer):
     request_info = await extract_request_info(request)
     original_response = get_response_from_cassette(cassette, request_info)
-
+    received_response = None
     request_matched = (original_response is not None)
-    if not request_matched:
-        observer.append({
-            'reason': 'Request mismatch',
-            'request': request_info,
-            # TODO: find a workaround
-            'original_response': {},
-            'received_response': {}
-        })
+    write_to_log = not request_matched
 
     async with aiohttp.ClientSession() as session:
         async with session.request(**request_info) as response:
             # Match response here
             if request_matched:
-                response_info = await extract_response_info(response)
-                responses_log = get_report(request_info, original_response, response_info,
-                                           request.app['RESPONSE_MATCH_ON'])
-                if not responses_log['match']:
-                    log = responses_log
-                    log['reason'] = 'Responses mismatch'
-                    observer.append(log)
+                # Match responses only when request matched
+                received_response = await extract_response_info(response)
+                match = not match_responses(original_response, received_response, request.app['RESPONSE_MATCH_ON'])
+                logger.debug('Request to {url}. Responses match: {match}'.format(url=request_info['url'], match=match))
+                write_to_log = not match
+
+            if write_to_log:
+                observer.append({
+                    'request': request_info,
+                    'original_response': original_response,
+                    'received_response': received_response,
+                    'result': '{} mismatch'.format('Request' if not request_matched else 'Responses')
+                })
+
             return web.Response(body=await response.text(), status=response.status, headers=response.headers)
 
 

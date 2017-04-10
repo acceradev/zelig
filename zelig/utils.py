@@ -7,7 +7,7 @@ from vcr.errors import UnhandledHTTPRequestError
 from vcr.request import Request
 from yarl import URL
 
-from report import save_observer_report
+from report import save_report
 
 
 class Observer:
@@ -19,14 +19,14 @@ class Observer:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        save_observer_report(self.path, self.data)
+        save_report(self.path, self.data)
 
     def append(self, item):
         self.data.append(item)
 
 
 async def wait(duration, reserve=0, loop=None):
-    # TODO: change name, change params_name
+    # TODO: change name, change params names
     sleep = max(0, duration - reserve)
     await asyncio.sleep(sleep, loop=loop)
 
