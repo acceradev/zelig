@@ -35,24 +35,7 @@ def _prepare_report(data):
         item['received_response'] = convert_to_unicode(item['received_response'])
 
 
-def get_report(request, old_response, new_response, match_on):
-    match = match_responses(old_response, new_response, match_on)
-    logger.debug('Request to {url}. Responses match: {match}'.format(url=request['url'], match=match))
-    return {
-        'request': request,
-        'original_response': old_response,
-        'received_response': new_response,
-        'match': match
-    }
-
-
-def save_client_report(report_path, matches):
-    _prepare_report(matches)
-    data = serialize({'matches': matches})
-    _write_to_file(report_path, data)
-
-
-def save_observer_report(report_path, log):
-    _prepare_report(log)
-    data = serialize({'mismatches': log})
+def save_report(report_path, data, root_key='results'):
+    _prepare_report(data)
+    data = serialize({root_key: data})
     _write_to_file(report_path, data)
