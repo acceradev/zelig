@@ -10,23 +10,6 @@ from yarl import URL
 from report import save_observer_report
 
 
-class Timer:
-    def __init__(self, app):
-        self._app = app
-        self._last_request_time = app.get('LAST_REQUEST_TIME') or time.perf_counter()
-        self.offset = 0
-        self.latency = 0
-
-    def __enter__(self):
-        current = time.perf_counter()
-        self.offset = current - self._last_request_time
-        self._app['LAST_REQUEST_TIME'] = self._request_start = current
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.latency = time.perf_counter() - self._request_start
-
-
 class Observer:
     def __init__(self, path):
         self.path = path
@@ -44,7 +27,7 @@ class Observer:
 
 async def wait(duration, reserve=0, loop=None):
     # TODO: change name, change params_name
-    sleep = int(max(0, duration - reserve))
+    sleep = max(0, duration - reserve)
     await asyncio.sleep(sleep, loop=loop)
 
 

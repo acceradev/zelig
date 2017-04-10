@@ -17,7 +17,7 @@ def config_app(app):
     # TODO: rename default
     app['ZELIG_CASSETTE_FILE'] = os.environ.get('ZELIG_CASSETTE_FILE', 'cassette.yml')
     app['ZELIG_CLIENT_REPORT'] = os.environ.get('ZELIG_CLIENT_REPORT', 'client_report.yml')
-    app['ZELIG_OBSERVER_REPORT'] = os.environ.get('ZELIG_OBSERVER_REPORT', 'watcher_report.yml')
+    app['ZELIG_OBSERVER_REPORT'] = os.environ.get('ZELIG_OBSERVER_REPORT', 'observer_report.yml')
 
     app['ZELIG_HOST'] = os.environ.get('ZELIG_HOST', '0.0.0.0')
     app['ZELIG_PORT'] = int(os.environ.get('ZELIG_PORT', 8081))

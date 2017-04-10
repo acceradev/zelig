@@ -1,6 +1,7 @@
-import pydevd
+import contextlib
+import functools
 import logging
-import time
+
 
 import aiohttp
 from aiohttp import web
@@ -8,14 +9,14 @@ import asyncio
 
 import vcr
 import vcr.serialize
+from vcr.serializers import yamlserializer
+from vcr.persisters.filesystem import FilesystemPersister
 
 from config import config_app
 from constants import ZeligMode, RecordMode
-from pathces import monkey_patch
 from report import save_client_report, get_report
 from utils import (
-    extract_response_info, extract_request_info, extract_vcr_request_info, get_response_from_cassette,
-    Timer, Observer, wait
+    extract_response_info, extract_request_info, extract_vcr_request_info, get_response_from_cassette, Observer, wait
 )
 
 
@@ -25,18 +26,15 @@ logger.setLevel(logging.DEBUG)
 
 async def simulate_client(app, loop):
     logger.info('Loading cassette {cassette}'.format(cassette=app['ZELIG_CASSETTE_FILE']))
-    # TODO: use load_cassette from vcr's master
-    with vcr.use_cassette(app['ZELIG_CASSETTE_FILE'],
-                          record_mode=RecordMode.NONE) as cass:
-        requests, responses = cass.requests, cass.responses
-    if not (requests and responses):
-        raise web.HTTPError(text='Can not load a cassette')
+
+    requests, responses = FilesystemPersister.load_cassette(app['ZELIG_CASSETTE_FILE'], yamlserializer)
     logger.info('Loaded {n} request-response pairs'.format(n=len(requests)))
 
     match_results = []
+    offset = requests[0].timestamp
     for (request, original_response) in zip(requests, responses):
-        await wait(request.offset, original_response['latency'], loop)
-
+        # TODO: check if we need this formula
+        await wait(request.timestamp - offset, original_response['latency'], loop=loop)
         request_info = extract_vcr_request_info(request)
         # TODO: handle errors that may occur
         async with aiohttp.ClientSession(loop=loop) as session:
@@ -45,11 +43,11 @@ async def simulate_client(app, loop):
                 # TODO: move to const
                 report = get_report(request_info, original_response, response_info, app['RESPONSE_MATCH_ON'])
                 match_results.append(report)
+    # TODO: move save somewhere else
     save_client_report(app['ZELIG_CLIENT_REPORT'], match_results)
 
 
 async def observe(request, cassette, observer):
-    # TODO: check if it matches request under the hood and we can extract this info
     request_info = await extract_request_info(request)
     original_response = get_response_from_cassette(cassette, request_info)
 
@@ -68,7 +66,6 @@ async def observe(request, cassette, observer):
             # Match response here
             if request_matched:
                 response_info = await extract_response_info(response)
-                # TODO: move to const
                 responses_log = get_report(request_info, original_response, response_info,
                                            request.app['RESPONSE_MATCH_ON'])
                 if not responses_log['match']:
@@ -78,48 +75,45 @@ async def observe(request, cassette, observer):
             return web.Response(body=await response.text(), status=response.status, headers=response.headers)
 
 
-async def proxy(request):
+async def handle_request(request, mode):
     request_info = await extract_request_info(request)
     # TODO: do we need this?
     request_info['headers']['HOST'] = request.app['TARGET_SERVER_HOST']
     async with aiohttp.ClientSession() as session:
         async with session.request(**request_info) as response:
-            return web.Response(body=await response.text(), status=response.status, headers=response.headers)
+            # For now we have a case when client asks for new url during server-mode
+            # The response then do not have a 'latency'
+            latency = getattr(response, 'latency', 0)
+            resp = web.Response(body=await response.text(), status=response.status, headers=response.headers)
+            logger.debug('Request to {request[url]}: {status}'.format(request=request_info, status=response.status))
+
+    if mode == ZeligMode.SERVER:
+        # TODO: find a better way
+        await wait(latency, loop=request.app.loop)
+    # TODO: check if we need to catch exceptions
+    # possibly no, cause aiohttp vcr stub simply set 599 status code to response
+    return resp
 
 
-async def handle_request(request):
-    # Disable possibility to change cassette by default
-    mode = request.app['ZELIG_MODE'].lower()
+def start_server(app):
+    mode = app['ZELIG_MODE']
 
     if mode == ZeligMode.SERVER:
         record_mode = RecordMode.NONE
     else:
         record_mode = RecordMode.ALL
-    with vcr.use_cassette(request.app['ZELIG_CASSETTE_FILE'],
-                          record_mode=record_mode,
-                          match_on=request.app['REQUEST_MATCH_ON']) as cassette:
+
+    with contextlib.ExitStack() as stack:
+        cassette = stack.enter_context(vcr.use_cassette(app['ZELIG_CASSETTE_FILE'],
+                                       record_mode=record_mode,
+                                       match_on=app['REQUEST_MATCH_ON']))
         if mode == ZeligMode.OBSERVER:
-            try:
-                with Observer(request.app['ZELIG_OBSERVER_REPORT']) as observer:
-                    with Timer(request.app) as timer:
-                        response = await observe(request, cassette, observer)
-            except Exception as e:
-                print(e)
-                return
+            observer = stack.enter_context(Observer(app['ZELIG_OBSERVER_REPORT']))
+            # TODO: support http://site.com/path(/)?
+            app.router.add_route('*', '/{path:\w*}', functools.partial(observe, cassette=cassette, observer=observer))
         else:
-            with Timer(request.app) as timer:
-                response = await proxy(request)
-        if mode == ZeligMode.SERVER:
-            # TODO: find a better way
-            # TODO: will not work - it's time of vcr - not real response
-            await asyncio.sleep(timer.latency)
-        else:
-            # TODO: find a better way
-            cassette.requests[-1].offset = timer.offset
-            cassette.responses[-1]['latency'] = timer.latency
-    # TODO: check if we need to catch exceptions
-    # possibly no, cause aiohttp vcr stub simply set 599 status code to response
-    return response
+            app.router.add_route('*', '/{path:\w*}', functools.partial(handle_request, mode=mode))
+        web.run_app(app, host=app['ZELIG_HOST'], port=app['ZELIG_PORT'])
 
 
 def main():
@@ -135,15 +129,12 @@ def main():
         loop.run_until_complete(simulate_client(app, loop))
         loop.close()
     else:
-        # TODO: support http://site.com/path(/)?
-        app.router.add_route('*', '/{path:\w*}', handle_request)
-        web.run_app(app, host=app['ZELIG_HOST'], port=app['ZELIG_PORT'])
+        start_server(app)
 
 
 if __name__ == '__main__':
-    pydevd.settrace('172.17.0.1', port=9998, stdoutToServer=True, stderrToServer=True)
-    patch, restore = monkey_patch()
-    patch()
-    start = time.time()
+    import os
+    if 'DEBUG' in os.environ:
+        import pydevd
+        pydevd.settrace('172.17.0.1', port=9998, stdoutToServer=True, stderrToServer=True)
     main()
-    restore()

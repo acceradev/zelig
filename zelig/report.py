@@ -22,8 +22,7 @@ def _write_to_file(path, data):
 def _prepare_request(request):
     return {
         'body': request['data'],
-        'headers': dict(request['headers']),
-        'params': dict(request['params']),
+        'headers': dict(((k, [v]) for k, v in request['headers'].items())),
         'method': request['method'],
         'url': request['url']
     }

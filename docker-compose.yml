@@ -12,3 +12,4 @@ services:
      - ZELIG_HOST=0.0.0.0
      - ZELIG_PORT=8081
      - ZELIG_MODE=observer
+     - DEBUG=True
