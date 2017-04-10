@@ -4,10 +4,11 @@ chardet==2.3.0
 multidict==2.1.4
 PyYAML==3.12
 six==1.10.0
-https://github.com/acceradev/vcrpy/zipball/zelig_enhancements
 virtualenv==15.0.3
 wrapt==1.10.10
 yarl==0.10.0
+
+https://github.com/acceradev/vcrpy/zipball/zelig_enhancements
 
 # TODO: remove
 pydevd

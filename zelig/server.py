@@ -1,13 +1,13 @@
+import asyncio
 import contextlib
 import functools
 import logging
 
-
 import aiohttp
 from aiohttp import web
-import asyncio
 
 import vcr
+from vcr.errors import UnhandledHTTPRequestError
 import vcr.serialize
 from vcr.serializers import yamlserializer
 from vcr.persisters.filesystem import FilesystemPersister
@@ -33,14 +33,12 @@ async def simulate_client(app, loop):
     match_results = []
     offset = requests[0].timestamp
     for (request, original_response) in zip(requests, responses):
-        # TODO: check if we need this formula
         await wait(request.timestamp - offset, original_response['latency'], loop=loop)
         request_info = extract_vcr_request_info(request)
         # TODO: handle errors that may occur
         async with aiohttp.ClientSession(loop=loop) as session:
             async with session.request(**request_info) as response:
                 response_info = await extract_response_info(response)
-                # TODO: move to const
                 report = get_report(request_info, original_response, response_info, app['RESPONSE_MATCH_ON'])
                 match_results.append(report)
     # TODO: move save somewhere else
@@ -56,15 +54,14 @@ async def observe(request, cassette, observer):
         observer.append({
             'reason': 'Request mismatch',
             'request': request_info,
-            # TODO: find a workaround
             'original_response': {},
             'received_response': {}
         })
 
     async with aiohttp.ClientSession() as session:
         async with session.request(**request_info) as response:
-            # Match response here
             if request_matched:
+                # Match responses only when request matched
                 response_info = await extract_response_info(response)
                 responses_log = get_report(request_info, original_response, response_info,
                                            request.app['RESPONSE_MATCH_ON'])
@@ -79,19 +76,25 @@ async def handle_request(request, mode):
     request_info = await extract_request_info(request)
     # TODO: do we need this?
     request_info['headers']['HOST'] = request.app['TARGET_SERVER_HOST']
-    async with aiohttp.ClientSession() as session:
-        async with session.request(**request_info) as response:
-            # For now we have a case when client asks for new url during server-mode
-            # The response then do not have a 'latency'
-            latency = getattr(response, 'latency', 0)
-            resp = web.Response(body=await response.text(), status=response.status, headers=response.headers)
-            logger.debug('Request to {request[url]}: {status}'.format(request=request_info, status=response.status))
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.request(**request_info) as response:
+                # For now we have a case when client asks for new url during server-mode
+                # The response then do not have a 'latency'
+                latency = getattr(response, 'latency', 0)
+                resp = web.Response(body=await response.text(), status=response.status, headers=response.headers)
+                logger.debug('Request to {request[url]}: {status}'.format(request=request_info, status=response.status))
 
-    if mode == ZeligMode.SERVER:
-        # TODO: find a better way
-        await wait(latency, loop=request.app.loop)
+        if mode == ZeligMode.SERVER:
+            # TODO: find a better way
+            await wait(latency, loop=request.app.loop)
     # TODO: check if we need to catch exceptions
     # possibly no, cause aiohttp vcr stub simply set 599 status code to response
+    except UnhandledHTTPRequestError as e:
+        request.transport.close()
+        # TODO: return reasonable response
+        # we have closed a connection but we still need to return something
+        raise web.HTTPBadRequest(text=str(e))
     return resp
 
 
@@ -103,6 +106,7 @@ def start_server(app):
     else:
         record_mode = RecordMode.ALL
 
+    # Use ExitStack to optionally enter Observer context
     with contextlib.ExitStack() as stack:
         cassette = stack.enter_context(vcr.use_cassette(app['ZELIG_CASSETTE_FILE'],
                                        record_mode=record_mode,

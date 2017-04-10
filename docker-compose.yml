@@ -11,5 +11,5 @@ services:
      - TARGET_SERVER_BASE_URL=http://172.17.0.1:8000
      - ZELIG_HOST=0.0.0.0
      - ZELIG_PORT=8081
-     - ZELIG_MODE=observer
+     - ZELIG_MODE=server
      - DEBUG=True

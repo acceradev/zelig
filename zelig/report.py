@@ -53,7 +53,6 @@ def save_client_report(report_path, matches):
 
 
 def save_observer_report(report_path, log):
-    # TODO: now we rewrite whole file - ommit
     _prepare_report(log)
     data = serialize({'mismatches': log})
     _write_to_file(report_path, data)
