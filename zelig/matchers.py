@@ -18,6 +18,6 @@ def match_responses(r1, r2, match_on):
         response_matchers = [getattr(ResponseMatchers, matcher) for matcher in match_on]
     except AttributeError:
         # TODO: find a better way to handle this
-        raise AttributeError('One of specified matchers does not exist')
+        raise AttributeError('One of the specified matchers does not exist')
     matches = [m(r1, r2) for m in response_matchers]
     return all(matches)

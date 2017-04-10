@@ -1,28 +1,10 @@
 import asyncio
-import time
 from urllib.parse import urljoin, urlparse
 
 from multidict import MultiDict
 from vcr.errors import UnhandledHTTPRequestError
 from vcr.request import Request
 from yarl import URL
-
-from report import save_report
-
-
-class Observer:
-    def __init__(self, path):
-        self.path = path
-        self.data = []
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        save_report(self.path, self.data)
-
-    def append(self, item):
-        self.data.append(item)
 
 
 async def wait(duration, reserve=0, loop=None):
