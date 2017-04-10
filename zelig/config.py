@@ -14,7 +14,6 @@ def config_app(app):
     app['TARGET_SERVER_BASE_URL'] = os.environ.get('TARGET_SERVER_BASE_URL', 'http://172.17.0.1:8000')
     app['TARGET_SERVER_HOST'] = urlparse(app['TARGET_SERVER_BASE_URL']).netloc
 
-    # TODO: rename default
     app['ZELIG_CASSETTE_FILE'] = os.environ.get('ZELIG_CASSETTE_FILE', 'cassette.yml')
     app['ZELIG_CLIENT_REPORT'] = os.environ.get('ZELIG_CLIENT_REPORT', 'client_report.yml')
     app['ZELIG_OBSERVER_REPORT'] = os.environ.get('ZELIG_OBSERVER_REPORT', 'observer_report.yml')

@@ -88,10 +88,8 @@ async def handle_request(request, mode):
         if mode == ZeligMode.SERVER:
             # TODO: find a better way
             await wait(latency, loop=request.app.loop)
-    # TODO: check if we need to catch exceptions
-    # possibly no, cause aiohttp vcr stub simply set 599 status code to response
     except UnhandledHTTPRequestError as e:
-        request.transport.close()
+        request.transport.abort()
         # TODO: return reasonable response
         # we have closed a connection but we still need to return something
         raise web.HTTPBadRequest(text=str(e))
