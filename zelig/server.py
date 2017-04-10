@@ -42,7 +42,7 @@ async def simulate_client(app, loop):
                 received_response = await extract_response_info(response)
                 match = match_responses(original_response, received_response, app['RESPONSE_MATCH_ON'])
                 match_results.append({
-                    'request': request,
+                    'request': request_info,
                     'original_response': original_response,
                     'received_response': received_response,
                     'result': 'Responses {}'.format('match' if match else 'mismatch')
@@ -63,7 +63,7 @@ async def observe(request, cassette, observer):
             if request_matched:
                 # Match responses only when request matched
                 received_response = await extract_response_info(response)
-                match = not match_responses(original_response, received_response, request.app['RESPONSE_MATCH_ON'])
+                match = match_responses(original_response, received_response, request.app['RESPONSE_MATCH_ON'])
                 logger.debug('Request to {url}. Responses match: {match}'.format(url=request_info['url'], match=match))
                 write_to_log = not match
 
