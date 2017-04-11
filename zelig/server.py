@@ -127,20 +127,20 @@ def start_server(app):
         srv = loop.run_until_complete(f)
         print('serving on', srv.sockets[0].getsockname())
 
-        def graceful_shutdown():
-            srv.close()
-            loop.run_until_complete(srv.wait_closed())
-            loop.run_until_complete(app.shutdown())
-            loop.run_until_complete(handler.shutdown(60.0))
-            loop.run_until_complete(app.cleanup())
+        def trigger_shutdown():
+            raise KeyboardInterrupt('Loop interrupt')
 
-        loop.add_signal_handler(signal.SIGTERM, graceful_shutdown)
+        loop.add_signal_handler(signal.SIGTERM, trigger_shutdown)
         try:
             loop.run_forever()
         except KeyboardInterrupt:
             pass
         finally:
-            graceful_shutdown()
+            srv.close()
+            loop.run_until_complete(srv.wait_closed())
+            loop.run_until_complete(app.shutdown())
+            loop.run_until_complete(handler.shutdown(60.0))
+            loop.run_until_complete(app.cleanup())
         loop.close()
 
 
