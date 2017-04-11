@@ -2,10 +2,10 @@ FROM python:3.6.1-alpine
 
 ADD ./requirements.txt /app/requirements.txt
 
-WORKDIR /app
-
-RUN pip install -r requirements.txt
+RUN pip install -r /app/requirements.txt
 
 COPY . /app
+
+WORKDIR /app
 
 CMD ["python", "zelig/server.py"]

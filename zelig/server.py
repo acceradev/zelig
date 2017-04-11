@@ -5,20 +5,18 @@ import logging
 import signal
 
 import aiohttp
-from aiohttp import web
-
 import vcr
+from aiohttp import web
 from vcr.errors import UnhandledHTTPRequestError
 
 from config import config_app
 from constants import ZeligMode, RecordMode
-from report import Reporter
 from matchers import match_responses
+from report import Reporter
 from utils import (
     extract_response_info, extract_request_info, extract_vcr_request_info, get_response_from_cassette, wait,
     load_cassette
 )
-
 
 logger = logging.getLogger('zelig')
 logger.setLevel(logging.DEBUG)
@@ -117,7 +115,6 @@ def start_server(app):
                                        match_on=app['REQUEST_MATCH_ON']))
         if mode == ZeligMode.OBSERVER:
             report = stack.enter_context(Reporter(app['ZELIG_OBSERVER_REPORT']))
-            # TODO: support http://site.com/path(/)?
             app.router.add_route('*', '/{path:.*}', functools.partial(observe, cassette=cassette, report=report))
         else:
             app.router.add_route('*', '/{path:.*}', functools.partial(handle_request, mode=mode))
@@ -126,27 +123,27 @@ def start_server(app):
         handler = app.make_handler(loop=loop)
         f = loop.create_server(handler, app['ZELIG_HOST'], app['ZELIG_PORT'])
         srv = loop.run_until_complete(f)
-        print('serving on', srv.sockets[0].getsockname())
+        print('Serving on', srv.sockets[0].getsockname())
 
-        def graceful_shutdown():
+        async def graceful_shutdown():
             srv.close()
-            loop.run_until_complete(srv.wait_closed())
-            loop.run_until_complete(app.shutdown())
-            loop.run_until_complete(handler.shutdown(60.0))
-            loop.run_until_complete(app.cleanup())
+            await srv.wait_closed()
+            await app.shutdown()
+            await handler.shutdown(60.0)
+            await app.cleanup()
+            print('Shutdown complete')
 
-        loop.add_signal_handler(signal.SIGTERM, graceful_shutdown)
+        loop.add_signal_handler(signal.SIGTERM, loop.stop)
         try:
             loop.run_forever()
         except KeyboardInterrupt:
             pass
         finally:
-            graceful_shutdown()
+            loop.run_until_complete(graceful_shutdown())
         loop.close()
 
 
 def main():
-
     app = web.Application()
     config_app(app)
 
