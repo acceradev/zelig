@@ -16,7 +16,7 @@ async def wait(duration, reserve=0, loop=None):
 
 
 async def extract_request_info(request):
-    return {
+    request_info = {
         'method': request.method,
         'url': urljoin(request.app['TARGET_SERVER_BASE_URL'], request.match_info.get('path')),
         # request.query has ProxyMultiDict type which doe not fit vcr aiohttp stub
@@ -24,12 +24,16 @@ async def extract_request_info(request):
         'headers': request.headers,
         'data': await request.read(),
     }
+    request_info['headers']['HOST'] = request.app['TARGET_SERVER_HOST']
+    return request_info
 
 
 def extract_vcr_request_info(request):
+    parsed_url = urlparse(request.uri)
+    url = urljoin('{}://{}'.format(parsed_url.scheme, parsed_url.netloc), parsed_url.path)
     return {
         'method': request.method,
-        'url': urlparse(request.uri).geturl(),
+        'url': url,
         'params': request.query,
         'headers': request.headers,
         'data': request.body,
@@ -37,9 +41,6 @@ def extract_vcr_request_info(request):
 
 
 async def extract_response_info(response):
-    # vcr serialize response the same way
-    # except of body - vcr user response.text(), however vcr load
-    # response from file as bytestring, so we read bytestring for comparison
     return {
         'status': {
             'code': response.status,
@@ -66,3 +67,7 @@ def get_response_from_cassette(cassette, request_info):
 
 def load_cassette(path):
     return FilesystemPersister.load_cassette(path, yamlserializer)
+
+
+def filter_response_headers(headers, filtered_headers=('content-encoding', 'content-length')):
+    return {k: v for k, v in headers.items() if k.lower() not in filtered_headers}

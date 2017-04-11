@@ -15,7 +15,7 @@ from matchers import match_responses
 from report import Reporter
 from utils import (
     extract_response_info, extract_request_info, extract_vcr_request_info, get_response_from_cassette, wait,
-    load_cassette
+    load_cassette, filter_response_headers
 )
 
 logger = logging.getLogger('zelig')
@@ -46,7 +46,6 @@ async def simulate_client(app, loop, report):
 
 async def observe(request, cassette, report):
     request_info = await extract_request_info(request)
-    request_info['headers']['HOST'] = request.app['TARGET_SERVER_HOST']
     original_response = get_response_from_cassette(cassette, request_info)
     received_response = None
     request_matched = (original_response is not None)
@@ -69,18 +68,18 @@ async def observe(request, cassette, report):
                     'result': '{} mismatch'.format('Request' if not request_matched else 'Responses')
                 })
 
-            return web.Response(body=await response.text(), status=response.status, headers=response.headers)
+            return web.Response(body=await response.read(), status=response.status,
+                                headers=filter_response_headers(response.headers))
 
 
 async def handle_request(request, mode):
     request_info = await extract_request_info(request)
-    # TODO: do we need this?
-    request_info['headers']['HOST'] = request.app['TARGET_SERVER_HOST']
     try:
         async with aiohttp.ClientSession() as session:
             async with session.request(**request_info) as response:
                 latency = getattr(response, 'latency', 0)
-                resp = web.Response(body=await response.read(), status=response.status, headers=response.headers)
+                resp = web.Response(body=await response.read(), status=response.status,
+                                    headers=filter_response_headers(response.headers))
                 logger.debug('Request to {request[url]}: {status}'.format(request=request_info, status=response.status))
 
         if mode == ZeligMode.SERVER:
