@@ -7,8 +7,4 @@ six==1.10.0
 virtualenv==15.0.3
 wrapt==1.10.10
 yarl==0.10.0
-
 https://github.com/acceradev/vcrpy/zipball/zelig_enhancements
-
-# TODO: remove
-pydevd

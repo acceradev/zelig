@@ -2,22 +2,21 @@ import asyncio
 import contextlib
 import functools
 import logging
+import signal
 
 import aiohttp
 from aiohttp import web
 
 import vcr
 from vcr.errors import UnhandledHTTPRequestError
-import vcr.serialize
-from vcr.serializers import yamlserializer
-from vcr.persisters.filesystem import FilesystemPersister
 
 from config import config_app
 from constants import ZeligMode, RecordMode
 from report import Reporter
 from matchers import match_responses
 from utils import (
-    extract_response_info, extract_request_info, extract_vcr_request_info, get_response_from_cassette, wait
+    extract_response_info, extract_request_info, extract_vcr_request_info, get_response_from_cassette, wait,
+    load_cassette
 )
 
 
@@ -27,8 +26,7 @@ logger.setLevel(logging.DEBUG)
 
 async def simulate_client(app, loop, report):
     logger.info('Loading cassette {cassette}'.format(cassette=app['ZELIG_CASSETTE_FILE']))
-
-    requests, responses = FilesystemPersister.load_cassette(app['ZELIG_CASSETTE_FILE'], yamlserializer)
+    requests, responses = load_cassette(app['ZELIG_CASSETTE_FILE'])
     logger.info('Loaded {n} request-response pairs'.format(n=len(requests)))
 
     offset = requests[0].timestamp
@@ -40,7 +38,7 @@ async def simulate_client(app, loop, report):
             async with session.request(**request_info) as response:
                 received_response = await extract_response_info(response)
                 match = match_responses(original_response, received_response, app['RESPONSE_MATCH_ON'])
-                report({
+                report.append({
                     'request': request_info,
                     'original_response': original_response,
                     'received_response': received_response,
@@ -65,7 +63,7 @@ async def observe(request, cassette, report):
                 write_to_log = not match
 
             if write_to_log:
-                report({
+                report.append({
                     'request': request_info,
                     'original_response': original_response,
                     'received_response': received_response,
@@ -83,14 +81,13 @@ async def handle_request(request, mode):
         async with aiohttp.ClientSession() as session:
             async with session.request(**request_info) as response:
                 latency = getattr(response, 'latency', 0)
-                resp = web.Response(body=await response.text(), status=response.status, headers=response.headers)
+                resp = web.Response(body=await response.read(), status=response.status, headers=response.headers)
                 logger.debug('Request to {request[url]}: {status}'.format(request=request_info, status=response.status))
 
         if mode == ZeligMode.SERVER:
             await wait(latency, loop=request.app.loop)
     except UnhandledHTTPRequestError as e:
         request.transport.abort()
-        # TODO: return reasonable response
         # we have closed a connection but we still need to return something
         raise web.HTTPBadRequest(text=str(e))
     return resp
@@ -120,13 +117,35 @@ def start_server(app):
         if mode == ZeligMode.OBSERVER:
             report = stack.enter_context(Reporter(app['ZELIG_OBSERVER_REPORT']))
             # TODO: support http://site.com/path(/)?
-            app.router.add_route('*', '/{path:\w*}', functools.partial(observe, cassette=cassette, report=report))
+            app.router.add_route('*', '/{path:.*}', functools.partial(observe, cassette=cassette, report=report))
         else:
-            app.router.add_route('*', '/{path:\w*}', functools.partial(handle_request, mode=mode))
-        web.run_app(app, host=app['ZELIG_HOST'], port=app['ZELIG_PORT'])
+            app.router.add_route('*', '/{path:.*}', functools.partial(handle_request, mode=mode))
+
+        loop = asyncio.get_event_loop()
+        handler = app.make_handler(loop=loop)
+        f = loop.create_server(handler, app['ZELIG_HOST'], app['ZELIG_PORT'])
+        srv = loop.run_until_complete(f)
+        print('serving on', srv.sockets[0].getsockname())
+
+        def graceful_shutdown():
+            srv.close()
+            loop.run_until_complete(srv.wait_closed())
+            loop.run_until_complete(app.shutdown())
+            loop.run_until_complete(handler.shutdown(60.0))
+            loop.run_until_complete(app.cleanup())
+
+        loop.add_signal_handler(signal.SIGTERM, graceful_shutdown)
+        try:
+            loop.run_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            graceful_shutdown()
+        loop.close()
 
 
 def main():
+
     app = web.Application()
     config_app(app)
 
@@ -140,8 +159,4 @@ def main():
 
 
 if __name__ == '__main__':
-    import os
-    if 'DEBUG' in os.environ:
-        import pydevd
-        pydevd.settrace('172.17.0.1', port=9998, stdoutToServer=True, stderrToServer=True)
     main()

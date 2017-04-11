@@ -48,7 +48,7 @@ class Reporter:
         self.data = []
 
     def __enter__(self):
-        return self.append
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         save_report(self.path, self.data)

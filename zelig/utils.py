@@ -4,6 +4,8 @@ from urllib.parse import urljoin, urlparse
 from multidict import MultiDict
 from vcr.errors import UnhandledHTTPRequestError
 from vcr.request import Request
+from vcr.persisters.filesystem import FilesystemPersister
+from vcr.serializers import yamlserializer
 from yarl import URL
 
 
@@ -60,3 +62,7 @@ def get_response_from_cassette(cassette, request_info):
     except UnhandledHTTPRequestError:
         return None
     return responses[0]
+
+
+def load_cassette(path):
+    return FilesystemPersister.load_cassette(path, yamlserializer)
