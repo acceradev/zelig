@@ -47,15 +47,14 @@ async def simulate_client(app, loop, report):
 async def observe(request, cassette, report):
     request_info = await extract_request_info(request)
     original_response = get_response_from_cassette(cassette, request_info)
-    received_response = None
     request_matched = (original_response is not None)
     write_to_log = not request_matched
 
     async with aiohttp.ClientSession() as session:
         async with session.request(**request_info) as response:
+            received_response = await extract_response_info(response)
             if request_matched:
                 # Match responses only when request matched
-                received_response = await extract_response_info(response)
                 match = match_responses(original_response, received_response, request.app.config.responses_match_on)
                 logger.debug('Request to {url}. Responses match: {match}'.format(url=request_info['url'], match=match))
                 write_to_log = not match

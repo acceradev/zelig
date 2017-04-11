@@ -19,21 +19,22 @@ def _write_to_file(path, data):
         f.write(data)
 
 
+def _prepare_headers(data):
+    data['headers'] = dict(((str(k), [v]) for k, v in data['headers'].items()))
+    return data
+
+
 def _prepare_request(request):
-    return {
-        'body': request['data'],
-        'headers': dict(((k, [v]) for k, v in request['headers'].items())),
-        'query': request['params'],
-        'method': request['method'],
-        'url': request['url']
-    }
+    request = _prepare_headers(request)
+    request['body'] = request.pop('data')
+    return request
 
 
 def _prepare_report(data):
     for item in data:
         item['request'] = convert_to_unicode(_prepare_request(item['request']))
         item['original_response'] = convert_to_unicode(item['original_response'])
-        item['received_response'] = convert_to_unicode(item['received_response'])
+        item['received_response'] = convert_to_unicode(_prepare_headers(item['received_response']))
 
 
 def save_report(report_path, data, root_key='results'):
