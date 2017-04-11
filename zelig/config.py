@@ -4,26 +4,23 @@ from urllib.parse import urlparse
 from constants import ZeligMode
 
 
-def create_config():
-    config = {
-        'mode': os.environ.get('ZELIG_MODE', ZeligMode.PROXY),
-        'target_server_base_url': os.environ.get('TARGET_SERVER_BASE_URL', 'http://www.httpbin.org'),
-        'cassette_path': os.environ.get('ZELIG_CASSETTE_FILE', 'cassette.yml'),
-        'client_report_path': os.environ.get('ZELIG_CLIENT_REPORT', 'client_report.yml'),
-        'observer_report_path': os.environ.get('ZELIG_OBSERVER_REPORT', 'observer_report.yml'),
-        'host': os.environ.get('ZELIG_HOST', '0.0.0.0'),
-        'port': int(os.environ.get('ZELIG_PORT', 8081)),
-        'requests_match_on': ['method', 'scheme', 'host', 'port', 'path', 'query', 'body'],
-        'responses_match_on': ['body', 'status']
-    }
+def config_app(app):
+    app['ZELIG_MODE'] = os.environ.get('ZELIG_MODE', ZeligMode.PROXY)
 
-    return Config(config)
+    # TODO: use enum
+    assert app['ZELIG_MODE'] in ('proxy', 'server', 'client', 'observer'), \
+        'ZELIG_MODE should be one of "proxy", "observer", "server" or "client"'
 
+    app['TARGET_SERVER_BASE_URL'] = os.environ.get('TARGET_SERVER_BASE_URL', 'http://www.httpbin.org')
+    app['TARGET_SERVER_HOST'] = urlparse(app['TARGET_SERVER_BASE_URL']).netloc
 
-class Config:
-    def __init__(self, config):
-        assert config['mode'] in ('proxy', 'server', 'client', 'observer')
-        for key, value in config.items():
-            setattr(self, key, value)
+    app['ZELIG_CASSETTE_FILE'] = os.environ.get('ZELIG_CASSETTE_FILE', 'cassette.yml')
+    app['ZELIG_CLIENT_REPORT'] = os.environ.get('ZELIG_CLIENT_REPORT', 'client_report.yml')
+    app['ZELIG_OBSERVER_REPORT'] = os.environ.get('ZELIG_OBSERVER_REPORT', 'observer_report.yml')
 
-        self.target_server_host = urlparse(self.target_server_base_url).netloc
+    app['ZELIG_HOST'] = os.environ.get('ZELIG_HOST', '0.0.0.0')
+    app['ZELIG_PORT'] = int(os.environ.get('ZELIG_PORT', 8081))
+
+    app['REQUEST_MATCH_ON'] = ['method', 'scheme', 'host', 'port', 'path', 'query', 'body']
+    app['RESPONSE_MATCH_ON'] = ['body', 'status']
+
