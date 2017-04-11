@@ -18,13 +18,13 @@ async def wait(duration, reserve=0, loop=None):
 async def extract_request_info(request):
     request_info = {
         'method': request.method,
-        'url': urljoin(request.app['TARGET_SERVER_BASE_URL'], request.match_info.get('path')),
+        'url': urljoin(request.app.config.target_server_base_url, request.match_info.get('path')),
         # request.query has ProxyMultiDict type which doe not fit vcr aiohttp stub
         'params': MultiDict(request.query),
         'headers': request.headers,
         'data': await request.read(),
     }
-    request_info['headers']['HOST'] = request.app['TARGET_SERVER_HOST']
+    request_info['headers']['HOST'] = request.app.config.target_server_host
     return request_info
 
 
