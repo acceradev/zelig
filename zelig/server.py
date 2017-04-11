@@ -3,28 +3,31 @@ import contextlib
 import functools
 import logging
 import signal
+import sys
 
 import aiohttp
 import vcr
 from aiohttp import web
 from vcr.errors import UnhandledHTTPRequestError
 
-from config import config_app
-from constants import ZeligMode, RecordMode
-from matchers import match_responses
-from report import Reporter
-from utils import (
+from zelig import config
+from zelig.app import ZeligServerApplication
+from zelig.constants import ZeligMode, RecordMode
+from zelig.matchers import match_responses
+from zelig.report import Reporter
+from zelig.utils import (
     extract_response_info, extract_request_info, extract_vcr_request_info, get_response_from_cassette, wait,
     load_cassette, filter_response_headers
 )
 
 logger = logging.getLogger('zelig')
 logger.setLevel(logging.DEBUG)
+logging.getLogger('').addHandler(logging.StreamHandler(sys.stdout))
 
 
 async def simulate_client(app, loop, report):
-    logger.info('Loading cassette {cassette}'.format(cassette=app['ZELIG_CASSETTE_FILE']))
-    requests, responses = load_cassette(app['ZELIG_CASSETTE_FILE'])
+    logger.info('Loading cassette {cassette}'.format(cassette=app.config.cassette_file))
+    requests, responses = load_cassette(app.config.cassette_file)
     logger.info('Loaded {n} request-response pairs'.format(n=len(requests)))
 
     offset = requests[0].timestamp
@@ -35,7 +38,8 @@ async def simulate_client(app, loop, report):
         async with aiohttp.ClientSession(loop=loop) as session:
             async with session.request(**request_info) as response:
                 received_response = await extract_response_info(response)
-                match = match_responses(original_response, received_response, app['RESPONSE_MATCH_ON'])
+                match_on = [m.value for m in app.config.response_match_on]
+                match = match_responses(original_response, received_response, match_on)
                 report.append({
                     'request': request_info,
                     'original_response': original_response,
@@ -55,7 +59,8 @@ async def observe(request, cassette, report):
             received_response = await extract_response_info(response)
             if request_matched:
                 # Match responses only when request matched
-                match = match_responses(original_response, received_response, request.app['RESPONSE_MATCH_ON'])
+                matchers = [v.value for v in request.app.config.response_match_on]
+                match = match_responses(original_response, received_response, matchers)
                 logger.debug('Request to {url}. Responses match: {match}'.format(url=request_info['url'], match=match))
                 write_to_log = not match
 
@@ -91,7 +96,7 @@ async def handle_request(request, mode):
 
 
 def start_client(app):
-    with Reporter(app['ZELIG_CLIENT_REPORT']) as report:
+    with Reporter(app.config.client_report_file) as report:
         # TODO: check this is enough
         loop = asyncio.get_event_loop()
         loop.run_until_complete(simulate_client(app, loop, report))
@@ -99,7 +104,7 @@ def start_client(app):
 
 
 def start_server(app):
-    mode = app['ZELIG_MODE']
+    mode = app.config.mode
 
     if mode == ZeligMode.SERVER:
         record_mode = RecordMode.NONE
@@ -108,18 +113,19 @@ def start_server(app):
 
     # Use ExitStack to optionally enter Reporter context
     with contextlib.ExitStack() as stack:
-        cassette = stack.enter_context(vcr.use_cassette(app['ZELIG_CASSETTE_FILE'],
-                                       record_mode=record_mode,
-                                       match_on=app['REQUEST_MATCH_ON']))
+        request_match_on = [i.value for i in app.config.request_match_on]
+        cassette = stack.enter_context(vcr.use_cassette(app.config.cassette_file,
+                                                        record_mode=record_mode.value,
+                                                        match_on=request_match_on))
         if mode == ZeligMode.OBSERVER:
-            report = stack.enter_context(Reporter(app['ZELIG_OBSERVER_REPORT']))
+            report = stack.enter_context(Reporter(app.config.observer_report_file))
             app.router.add_route('*', '/{path:.*}', functools.partial(observe, cassette=cassette, report=report))
         else:
             app.router.add_route('*', '/{path:.*}', functools.partial(handle_request, mode=mode))
 
         loop = asyncio.get_event_loop()
         handler = app.make_handler(loop=loop)
-        f = loop.create_server(handler, app['ZELIG_HOST'], app['ZELIG_PORT'])
+        f = loop.create_server(handler, app.config.zelig_host, app.config.zelig_port)
         srv = loop.run_until_complete(f)
         print('Serving on', srv.sockets[0].getsockname())
 
@@ -142,13 +148,13 @@ def start_server(app):
 
 
 def main():
-    app = web.Application()
-    config_app(app)
+    conf = config.get_config()
+    app = ZeligServerApplication(config=conf)
 
-    logger.info('Start zelig in "{mode}" mode'.format(mode=app['ZELIG_MODE']))
+    logger.info('Start zelig in "{mode}" mode'.format(mode=app.config.mode))
     # Run coroutine for 'client' mode
     # Run server for 'server' and 'proxy' modes
-    if app['ZELIG_MODE'] == ZeligMode.CLIENT:
+    if app.config.mode == ZeligMode.CLIENT:
         start_client(app)
     else:
         start_server(app)
