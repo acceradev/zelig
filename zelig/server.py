@@ -48,6 +48,7 @@ async def simulate_client(app, loop, report):
 
 async def observe(request, cassette, report):
     request_info = await extract_request_info(request)
+    request_info['headers']['HOST'] = request.app['TARGET_SERVER_HOST']
     original_response = get_response_from_cassette(cassette, request_info)
     received_response = None
     request_matched = (original_response is not None)
@@ -127,20 +128,20 @@ def start_server(app):
         srv = loop.run_until_complete(f)
         print('serving on', srv.sockets[0].getsockname())
 
-        def trigger_shutdown():
-            raise KeyboardInterrupt('Loop interrupt')
-
-        loop.add_signal_handler(signal.SIGTERM, trigger_shutdown)
-        try:
-            loop.run_forever()
-        except KeyboardInterrupt:
-            pass
-        finally:
+        def graceful_shutdown():
             srv.close()
             loop.run_until_complete(srv.wait_closed())
             loop.run_until_complete(app.shutdown())
             loop.run_until_complete(handler.shutdown(60.0))
             loop.run_until_complete(app.cleanup())
+
+        loop.add_signal_handler(signal.SIGTERM, graceful_shutdown)
+        try:
+            loop.run_forever()
+        except KeyboardInterrupt:
+            pass
+        finally:
+            graceful_shutdown()
         loop.close()
 
 

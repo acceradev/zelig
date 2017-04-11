@@ -11,7 +11,7 @@ def config_app(app):
     assert app['ZELIG_MODE'] in ('proxy', 'server', 'client', 'observer'), \
         'ZELIG_MODE should be one of "proxy", "observer", "server" or "client"'
 
-    app['TARGET_SERVER_BASE_URL'] = os.environ.get('TARGET_SERVER_BASE_URL', 'http://172.17.0.1:8000')
+    app['TARGET_SERVER_BASE_URL'] = os.environ.get('TARGET_SERVER_BASE_URL', 'http://www.httpbin.org')
     app['TARGET_SERVER_HOST'] = urlparse(app['TARGET_SERVER_BASE_URL']).netloc
 
     app['ZELIG_CASSETTE_FILE'] = os.environ.get('ZELIG_CASSETTE_FILE', 'cassette.yml')
