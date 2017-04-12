@@ -22,12 +22,15 @@ logger = logging.getLogger('zelig')
 
 async def observer(request, report, cassette):
     request_info = await extract_request_info(request)
+
     original_response = get_response_from_cassette(cassette, request_info)
     request_matched = (original_response is not None)
     write_to_log = not request_matched
 
     response = await make_request(request_info)
+
     received_response = await extract_response_info(response)
+
     logger.info(f'Request already exist: {request_matched}')
     if request_matched:
         # Match responses only when request matched
