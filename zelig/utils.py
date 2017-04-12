@@ -74,7 +74,7 @@ def load_cassette(path):
     return FilesystemPersister.load_cassette(path, yamlserializer)
 
 
-def filter_response_headers(headers, filtered_headers=('content-encoding', 'content-length')):
+def filter_response_headers(headers, filtered_headers=('content-encoding', 'content-length', 'transfer-encoding')):
     return {k: v for k, v in headers.items() if k.lower() not in filtered_headers}
 
 
