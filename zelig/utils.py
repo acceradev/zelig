@@ -1,5 +1,9 @@
 import asyncio
+import logging
 from urllib.parse import urljoin, urlparse
+
+import aiohttp
+from aiohttp import web
 
 from multidict import MultiDict
 from vcr.errors import UnhandledHTTPRequestError
@@ -9,9 +13,11 @@ from vcr.serializers import yamlserializer
 from yarl import URL
 
 
+logger = logging.getLogger('zelig')
+
 async def wait(duration, reserve=0, loop=None):
-    # TODO: change name, change params names
     sleep = max(0, duration - reserve)
+    logger.debug(f'Processing simulation: sleeping {sleep} seconds')
     await asyncio.sleep(sleep, loop=loop)
 
 
@@ -57,7 +63,6 @@ def get_response_from_cassette(cassette, request_info):
                       uri=str(URL(request_info['url']).with_query(request_info['params'])),
                       body=request_info['data'],
                       headers=request_info['headers'])
-    # TODO: define function that will return first response for request
     try:
         responses = cassette.responses_of(request)
     except UnhandledHTTPRequestError:
@@ -71,3 +76,16 @@ def load_cassette(path):
 
 def filter_response_headers(headers, filtered_headers=('content-encoding', 'content-length')):
     return {k: v for k, v in headers.items() if k.lower() not in filtered_headers}
+
+
+async def get_server_response(response):
+    return web.Response(body=await response.read(), status=response.status,
+                        headers=filter_response_headers(response.headers))
+
+
+async def make_request(request_info):
+    async with aiohttp.ClientSession() as session:
+        async with session.request(**request_info) as response:
+            logger.debug('Request to {request[method]} {request[url]} {request[params]}: {status}'.format(
+                request=request_info, status=response.status))
+            return response

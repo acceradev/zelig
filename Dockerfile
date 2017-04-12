@@ -8,4 +8,4 @@ COPY . /app
 
 WORKDIR /app
 
-CMD ["python", "zelig/server.py"]
+CMD ["python", "zelig/main.py"]
