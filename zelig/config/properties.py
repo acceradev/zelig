@@ -1,0 +1,70 @@
+import os
+from urllib.parse import urlparse
+
+from .errors import MissingValueError, InvalidValueError
+
+notset = object()
+
+
+class Property:
+    def __init__(self, key, default=notset):
+        self._key = key
+        self._default = default
+        self._value = self.__get_value(key=key, default=default)
+
+    def clean(self, value):
+        return value
+
+    @property
+    def key(self):
+        return self._key
+
+    @property
+    def default(self):
+        return self._default
+
+    def __get__(self, instance, owner):
+        return self._value
+
+    def __get_value(self, default, key):
+        self.__check_has_value()
+        value = os.environ.get(key, default=default)
+        return self.clean(value)
+
+    def __check_has_value(self):
+        if self.key not in os.environ and self.default is notset:
+            error_msg = f'You should set \'{self.key}\' environment variable'
+            raise MissingValueError(error_msg)
+
+
+class IntProperty(Property):
+    def clean(self, value):
+        try:
+            return int(value)
+        except TypeError:
+            raise InvalidValueError(f'Value of {self.key} param should be integer')
+
+
+class EnumProperty(Property):
+    def __init__(self, key, enum_class, default=notset):
+        self.enum_class = enum_class
+        super().__init__(key=key, default=default)
+
+    def clean(self, value):
+        try:
+            return self.enum_class(value)
+        except ValueError:
+            possible_values = ', '.join((f'{c.value}' for c in self.enum_class))
+            raise InvalidValueError(f'Value of {self.key} param should be one of [{possible_values}]')
+
+
+class MultiEnumProperty(EnumProperty):
+    def clean(self, value):
+        res = []
+        for v in value.split():
+            res.append(super().clean(v))
+
+        if not res:
+            raise InvalidValueError(
+                f'Value of {self.key} param should be one or more (space separated) of [{possible_values}]')
+        return res

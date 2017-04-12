@@ -127,7 +127,7 @@ def start_server(app):
         handler = app.make_handler(loop=loop)
         f = loop.create_server(handler, app.config.zelig_host, app.config.zelig_port)
         srv = loop.run_until_complete(f)
-        print('Serving on', srv.sockets[0].getsockname())
+        logging.info('Serving on', srv.sockets[0].getsockname())
 
         async def graceful_shutdown():
             srv.close()
@@ -135,7 +135,7 @@ def start_server(app):
             await app.shutdown()
             await handler.shutdown(60.0)
             await app.cleanup()
-            print('Shutdown complete')
+            logger.info('Zelig server successfully shut down')
 
         loop.add_signal_handler(signal.SIGTERM, loop.stop)
         try:
@@ -151,7 +151,7 @@ def main():
     conf = config.get_config()
     app = ZeligServerApplication(config=conf)
 
-    logger.info('Start zelig in "{mode}" mode'.format(mode=app.config.mode))
+    logger.info('Start zelig in "{mode}" mode'.format(mode=app.config.mode.value))
     # Run coroutine for 'client' mode
     # Run server for 'server' and 'proxy' modes
     if app.config.mode == ZeligMode.CLIENT:
