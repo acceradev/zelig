@@ -4,8 +4,6 @@ import os
 from vcr.serializers.compat import convert_to_unicode
 from vcr.serializers.yamlserializer import serialize
 
-from matchers import match_responses
-
 
 logger = logging.getLogger('zelig')
 

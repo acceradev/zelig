@@ -14,6 +14,11 @@ class BaseConfig:
     cassette_name = Property('ZELIG_CASSETTE_FILE', default='cassette.yml')
     target_server_base_url = Property('TARGET_SERVER_BASE_URL')
 
+    def __init__(self):
+        for k in dir(self):
+            if not k.startswith('__'):
+                getattr(self, k)
+
     @property
     def target_server_host(self):
         res = urlparse(self.target_server_base_url).netloc
@@ -30,6 +35,7 @@ class ClientConfig(BaseConfig):
                                          default=DEFAULT_REQUEST_MATCH_ON)
     response_match_on = MultiEnumProperty('RESPONSE_MATCH_ON', enum_class=ResponseMatchCriteria,
                                           default=DEFAULT_RESPONSE_MATCH_ON)
+
     client_report_name = Property('ZELIG_CLIENT_REPORT', default='client_report.yml')
 
     @property
@@ -41,6 +47,7 @@ class ProxyConfig(BaseConfig):
     mode = ZeligMode.PROXY
     zelig_host = Property('ZELIG_HOST', default='0.0.0.0')
     zelig_port = IntProperty('ZELIG_PORT', default=8081)
+
     request_match_on = MultiEnumProperty('REQUEST_MATCH_ON', enum_class=RequestMatchCriteria,
                                          default=DEFAULT_REQUEST_MATCH_ON)
 
@@ -57,8 +64,10 @@ class ObserverConfig(BaseConfig):
     mode = ZeligMode.OBSERVER
     zelig_host = Property('ZELIG_HOST', default='0.0.0.0')
     zelig_port = IntProperty('ZELIG_PORT', default=8081)
+
     request_match_on = MultiEnumProperty('REQUEST_MATCH_ON', enum_class=RequestMatchCriteria,
                                          default=DEFAULT_REQUEST_MATCH_ON)
+
     response_match_on = MultiEnumProperty('RESPONSE_MATCH_ON', enum_class=ResponseMatchCriteria,
                                           default=DEFAULT_RESPONSE_MATCH_ON)
     observer_report_name = Property('ZELIG_OBSERVER_REPORT', default='observer_report.yml')

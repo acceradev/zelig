@@ -1,5 +1,4 @@
 import os
-from urllib.parse import urlparse
 
 from .errors import MissingValueError, InvalidValueError
 
@@ -10,7 +9,7 @@ class Property:
     def __init__(self, key, default=notset):
         self._key = key
         self._default = default
-        self._value = self.__get_value(key=key, default=default)
+        self._value = notset
 
     def clean(self, value):
         return value
@@ -24,11 +23,13 @@ class Property:
         return self._default
 
     def __get__(self, instance, owner):
+        if self._value is notset:
+            self._value = self.__get_value()
         return self._value
 
-    def __get_value(self, default, key):
+    def __get_value(self):
         self.__check_has_value()
-        value = os.environ.get(key, default=default)
+        value = os.environ.get(self.key, default=self.default)
         return self.clean(value)
 
     def __check_has_value(self):
