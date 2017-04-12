@@ -12,6 +12,8 @@ from vcr.persisters.filesystem import FilesystemPersister
 from vcr.serializers import yamlserializer
 from yarl import URL
 
+from zelig.constants import FilteredHeaders
+
 
 logger = logging.getLogger('zelig')
 
@@ -74,7 +76,8 @@ def load_cassette(path):
     return FilesystemPersister.load_cassette(path, yamlserializer)
 
 
-def filter_response_headers(headers, filtered_headers=('content-encoding', 'content-length', 'transfer-encoding')):
+def filter_response_headers(headers):
+    filtered_headers = [h.value for h in FilteredHeaders]
     return {k: v for k, v in headers.items() if k.lower() not in filtered_headers}
 
 

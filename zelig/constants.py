@@ -32,3 +32,11 @@ class RequestMatchCriteria(Enum):
 class ResponseMatchCriteria(Enum):
     BODY = 'body'
     STATUS = 'status'
+
+
+@unique
+class FilteredHeaders(Enum):
+    CONTENT_ENCODING = 'content-encoding'
+    CONTENT_LENGTH = 'content-length'
+    TRANSFER_ENCODING = 'transfer-encoding'
+    TRAILER = 'trailer'
