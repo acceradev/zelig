@@ -6,6 +6,6 @@ RUN pip install -r /app/requirements.txt
 
 COPY . /app
 
-WORKDIR /app
+ENV PYTHONPATH=$PYTHONPATH:/app
 
-CMD ["python", "zelig/main.py"]
+CMD ["python", "/app/zelig/main.py"]
