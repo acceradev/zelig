@@ -10,14 +10,14 @@ It could work in 4 modes:
  * `observe`
 
 #### Record
-In `record` mode Zelig propagates all incoming requests to specified server. Also it logs all request-response pairs.
+In `record` mode Zelig propagates all incoming requests to the specified server. Also it logs all request-response pairs.
 #### Serve
 In `serve` mode Zelig do not propagates incoming requests. Instead it returns previously recorded responses. Also it closes
 the connection on unknown requests.
 #### Playback
 In `playback` mode Zelig reads all recorded request-response pairs and send all requests again. Then it compares old and new responses and logs mismatches
 #### Observe
-In `observe` mode Zelig works like in `record` mode, however it also logs all unknown incoming requests and all mismatched responses.
+In `observe` mode Zelig works like in `record` mode, but it also logs all unknown incoming requests and all mismatched responses.
 
 ### How to use
 Zelig can be configured using some environment variables:
@@ -30,4 +30,5 @@ Zelig can be configured using some environment variables:
  * [optional] REQUEST_MATCH_ON - space separated list of request properties, that are used to compare requests. Default is `method scheme host port path query body`
  * [optional] RESPONSE_MATCH_ON - space separated list of response properties, that are used to compare responses. Default is `body status`
  * [optional] DEBUG - enables debug level console logs. Set to `1` or `true`
+
 Also you should map your local directory to `/files` directory inside container. This directory will contain all logs writen by Zelig.
