@@ -1,7 +1,9 @@
+import os
 import logging.config
 
 __all__ = ['logger']
 
+DEBUG = os.environ.get('DEBUG', '').lower() in ['true', '1']
 
 CONFIG = {
     'version': 1,
@@ -26,7 +28,7 @@ CONFIG = {
     },
     'loggers': {
         'zelig': {
-            'level': logging.INFO,
+            'level': logging.DEBUG if DEBUG else logging.INFO,
             'handlers': ['zelig'],
             'propagate': False
         },

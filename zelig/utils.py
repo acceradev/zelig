@@ -89,7 +89,7 @@ async def make_request(request_info):
         async with session.request(**request_info) as response:
             query_params = request_info['params']
             qs = f'?{urllib.parse.urlencode(query_params)}' if query_params else ''
-            logger.debug('{request[method]} {request[url]}{qs}: {status}'.format(
+            logger.info('{request[method]} {request[url]}{qs} - {status}'.format(
                 request=request_info, status=response.status, qs=qs))
 
             return response
