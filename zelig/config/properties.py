@@ -1,11 +1,9 @@
 import os
-import logging
 
 from .errors import MissingValueError, InvalidValueError
+from zelig.log import logger
 
 notset = object()
-
-logger = logging.getLogger('zelig')
 
 
 class Property:
@@ -35,7 +33,7 @@ class Property:
         if self.key in os.environ:
             value = os.environ[self.key]
         else:
-            logger.warning(f'Warning! Param \'{self.key}\' is not provided, using default value \'{self.default}\'')
+            logger.warning(f'Param \'{self.key}\' is not provided, using default value \'{self.default}\'')
             value = self.default
         return self.clean(value)
 

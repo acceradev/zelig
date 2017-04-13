@@ -1,11 +1,9 @@
 import asyncio
-import logging
 
+from zelig.log import logger
 from zelig.matchers import match_responses
 from zelig.report import Reporter
 from zelig.utils import load_cassette, extract_vcr_request_info, wait, extract_response_info, make_request
-
-logger = logging.getLogger('zelig')
 
 
 async def simulate_client(config, loop, report):

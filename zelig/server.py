@@ -4,20 +4,19 @@ import functools
 import logging
 import signal
 
-from aiohttp import web
 import vcr
+from aiohttp import web
 from vcr.errors import UnhandledHTTPRequestError
 
 from zelig.app import ZeligServerApplication
 from zelig.constants import ZeligMode, RecordMode
+from zelig.log import logger
 from zelig.matchers import match_responses
 from zelig.report import Reporter
 from zelig.utils import (
     extract_response_info, extract_request_info, get_response_from_cassette, wait,
     make_request, get_server_response
 )
-
-logger = logging.getLogger('zelig')
 
 
 async def observer(request, report, cassette):

@@ -1,15 +1,9 @@
-import logging
-import sys
-
 from zelig import config
 from zelig.client import start_client
 from zelig.config import ConfigurationError
 from zelig.constants import ZeligMode
 from zelig.server import start_server
-
-logger = logging.getLogger('zelig')
-logger.setLevel(logging.DEBUG)
-logging.getLogger('').addHandler(logging.StreamHandler(sys.stdout))
+from zelig.log import logger
 
 
 def main():

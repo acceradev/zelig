@@ -1,11 +1,9 @@
-import logging
 import os
 
 from vcr.serializers.compat import convert_to_unicode
 from vcr.serializers.yamlserializer import serialize
 
-
-logger = logging.getLogger('zelig')
+from zelig.log import logger
 
 
 def _write_to_file(path, data):

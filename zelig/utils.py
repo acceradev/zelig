@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import urllib.parse
 from urllib.parse import urljoin, urlparse
 
@@ -13,8 +12,7 @@ from vcr.serializers import yamlserializer
 from yarl import URL
 
 from zelig.constants import HEADERS_TO_IGNORE
-
-logger = logging.getLogger('zelig')
+from zelig.log import logger
 
 
 async def wait(duration, reserve=0, loop=None):
