@@ -32,22 +32,22 @@ class BaseConfig:
                 getattr(self, k)
 
 
-class ClientConfig(BaseConfig):
-    mode = ZeligMode.CLIENT
+class PlaybackConfig(BaseConfig):
+    mode = ZeligMode.PLAYBACK
     request_match_on = MultiEnumProperty('REQUEST_MATCH_ON', enum_class=RequestMatchCriteria,
                                          default=DEFAULT_REQUEST_MATCH_ON)
     response_match_on = MultiEnumProperty('RESPONSE_MATCH_ON', enum_class=ResponseMatchCriteria,
                                           default=DEFAULT_RESPONSE_MATCH_ON)
 
-    client_report_name = Property('ZELIG_CLIENT_REPORT', default='client_report.yml')
+    playback_report_name = Property('ZELIG_PLAYBACK_REPORT', default='playback_report.yml')
 
     @property
-    def client_report_file(self):
-        return os.path.join(self.base_files_dir, self.client_report_name)
+    def playback_report_file(self):
+        return os.path.join(self.base_files_dir, self.playback_report_name)
 
 
-class ProxyConfig(BaseConfig):
-    mode = ZeligMode.PROXY
+class RecordConfig(BaseConfig):
+    mode = ZeligMode.RECORD
     zelig_host = Property('ZELIG_HOST', default='0.0.0.0')
     zelig_port = IntProperty('ZELIG_PORT', default=8081)
 
@@ -55,16 +55,16 @@ class ProxyConfig(BaseConfig):
                                          default=DEFAULT_REQUEST_MATCH_ON)
 
 
-class ServerConfig(BaseConfig):
-    mode = ZeligMode.SERVER
+class ServeConfig(BaseConfig):
+    mode = ZeligMode.SERVE
     zelig_host = Property('ZELIG_HOST', default='0.0.0.0')
     zelig_port = IntProperty('ZELIG_PORT', default=8081)
     request_match_on = MultiEnumProperty('REQUEST_MATCH_ON', enum_class=RequestMatchCriteria,
                                          default=DEFAULT_REQUEST_MATCH_ON)
 
 
-class ObserverConfig(BaseConfig):
-    mode = ZeligMode.OBSERVER
+class ObserveConfig(BaseConfig):
+    mode = ZeligMode.OBSERVE
     zelig_host = Property('ZELIG_HOST', default='0.0.0.0')
     zelig_port = IntProperty('ZELIG_PORT', default=8081)
 
@@ -73,8 +73,8 @@ class ObserverConfig(BaseConfig):
 
     response_match_on = MultiEnumProperty('RESPONSE_MATCH_ON', enum_class=ResponseMatchCriteria,
                                           default=DEFAULT_RESPONSE_MATCH_ON)
-    observer_report_name = Property('ZELIG_OBSERVER_REPORT', default='observer_report.yml')
+    observe_report_name = Property('ZELIG_OBSERVE_REPORT', default='observe_report.yml')
 
     @property
-    def observer_report_file(self):
-        return os.path.join(self.base_files_dir, self.observer_report_name)
+    def observe_report_file(self):
+        return os.path.join(self.base_files_dir, self.observe_report_name)

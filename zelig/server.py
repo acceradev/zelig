@@ -19,7 +19,7 @@ from zelig.utils import (
 )
 
 
-async def observer(request, report, cassette):
+async def observe(request, report, cassette):
     request_info = await extract_request_info(request)
 
     original_response = get_response_from_cassette(cassette, request_info)
@@ -48,12 +48,12 @@ async def observer(request, report, cassette):
     return await get_server_response(response)
 
 
-async def proxy(request):
+async def record(request):
     request_info = await extract_request_info(request)
     response = await make_request(request_info)
     return await get_server_response(response)
 
-async def server(request):
+async def serve(request):
     request_info = await extract_request_info(request)
     response = await make_request(request_info)
     await wait(response.latency, loop=request.app.loop)
@@ -62,8 +62,8 @@ async def server(request):
 
 async def request_handler(request, mode):
     handlers = {
-        ZeligMode.SERVER: server,
-        ZeligMode.PROXY: proxy
+        ZeligMode.SERVE: serve,
+        ZeligMode.RECORD: record
     }
     try:
         return await handlers[mode](request)
@@ -103,7 +103,7 @@ def start_server(config):
     app = ZeligServerApplication(config=config)
     mode = config.mode
 
-    if mode == ZeligMode.SERVER:
+    if mode == ZeligMode.SERVE:
         record_mode = RecordMode.NONE
     else:
         record_mode = RecordMode.ALL
@@ -114,9 +114,9 @@ def start_server(config):
         cassette = stack.enter_context(vcr.use_cassette(config.cassette_file,
                                                         record_mode=record_mode.value,
                                                         match_on=request_match_on))
-        if mode == ZeligMode.OBSERVER:
-            report = stack.enter_context(Reporter(config.observer_report_file))
-            app.router.add_route('*', '/{path:.*}', functools.partial(observer, cassette=cassette, report=report))
+        if mode == ZeligMode.OBSERVE:
+            report = stack.enter_context(Reporter(config.observe_report_file))
+            app.router.add_route('*', '/{path:.*}', functools.partial(observe, cassette=cassette, report=report))
         else:
             app.router.add_route('*', '/{path:.*}', functools.partial(request_handler, mode=mode))
 

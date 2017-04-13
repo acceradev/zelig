@@ -1,5 +1,5 @@
 from .properties import EnumProperty
-from .configs import ClientConfig, ServerConfig, ProxyConfig, ObserverConfig
+from .configs import PlaybackConfig, ServeConfig, RecordConfig, ObserveConfig
 
 from zelig.constants import ZeligMode
 
@@ -8,10 +8,10 @@ class ConfigFactory:
     mode = EnumProperty('ZELIG_MODE', enum_class=ZeligMode)
 
     MAPPING = {
-        ZeligMode.CLIENT: ClientConfig,
-        ZeligMode.SERVER: ServerConfig,
-        ZeligMode.PROXY: ProxyConfig,
-        ZeligMode.OBSERVER: ObserverConfig,
+        ZeligMode.PLAYBACK: PlaybackConfig,
+        ZeligMode.SERVE: ServeConfig,
+        ZeligMode.RECORD: RecordConfig,
+        ZeligMode.OBSERVE: ObserveConfig,
     }
 
     @classmethod

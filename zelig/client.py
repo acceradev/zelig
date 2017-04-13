@@ -10,7 +10,7 @@ from zelig.utils import (
 )
 
 
-async def simulate_client(config, loop, report):
+async def playback(config, loop, report):
     logger.info('Loading cassette {cassette}'.format(cassette=config.cassette_file))
     requests, responses = load_cassette(config.cassette_file)
     logger.info('Loaded {n} request-response pairs'.format(n=len(requests)))
@@ -34,17 +34,17 @@ async def simulate_client(config, loop, report):
             match_on = [m.value for m in config.response_match_on]
             match = match_responses(original_response, received_response, match_on)
             logger.info(f'Responses match: {match}')
+            if not match:
+                report.append({
+                    'request': request_info,
+                    'original_response': original_response,
+                    'received_response': received_response,
+                    'result': 'Responses {}'.format('match' if match else 'mismatch')
+                })
 
-            report.append({
-                'request': request_info,
-                'original_response': original_response,
-                'received_response': received_response,
-                'result': 'Responses {}'.format('match' if match else 'mismatch')
-            })
 
-
-def start_client(config):
-    with Reporter(config.client_report_file) as report:
+def start_playback(config):
+    with Reporter(config.playback_report_file) as report:
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(simulate_client(config, loop, report))
+        loop.run_until_complete(playback(config, loop, report))
         loop.close()

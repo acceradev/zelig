@@ -1,5 +1,5 @@
 from zelig import config
-from zelig.client import start_client
+from zelig.client import start_playback
 from zelig.config import ConfigurationError
 from zelig.constants import ZeligMode
 from zelig.server import start_server
@@ -14,11 +14,11 @@ def main():
         exit(1)
 
     logger.info('Start zelig in "{mode}" mode'.format(mode=conf.mode.value))
-    if conf.mode == ZeligMode.CLIENT:
-        # Run coroutine for 'client' mode
-        start_client(conf)
+    if conf.mode == ZeligMode.PLAYBACK:
+        # Run coroutine for 'playback' mode
+        start_playback(conf)
     else:
-        # Run server for 'server', 'observer' and 'proxy' modes
+        # Run server for 'serve', 'observe' and 'record' modes
         start_server(conf)
 
 

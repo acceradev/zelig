@@ -3,10 +3,10 @@ from enum import Enum, IntEnum, unique
 
 @unique
 class ZeligMode(Enum):
-    PROXY = 'proxy'
-    SERVER = 'server'
-    CLIENT = 'client'
-    OBSERVER = 'observer'
+    RECORD = 'record'
+    SERVE = 'serve'
+    PLAYBACK = 'playback'
+    OBSERVE = 'observe'
 
 
 @unique
