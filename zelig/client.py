@@ -1,9 +1,13 @@
 import asyncio
 
+import aiohttp
+
 from zelig.log import logger
 from zelig.matchers import match_responses
 from zelig.report import Reporter
-from zelig.utils import load_cassette, extract_vcr_request_info, wait, extract_response_info, make_request
+from zelig.utils import (
+    load_cassette, extract_vcr_request_info, wait, extract_response_info, extract_error_response_info, get_query_string
+)
 
 
 async def simulate_client(config, loop, report):
@@ -11,25 +15,32 @@ async def simulate_client(config, loop, report):
     requests, responses = load_cassette(config.cassette_file)
     logger.info('Loaded {n} request-response pairs'.format(n=len(requests)))
 
-    offset = requests[0].timestamp
-    for (request, original_response) in zip(requests, responses):
-        await wait(request.timestamp - offset, original_response['latency'], loop=loop)
+    async with aiohttp.ClientSession() as session:
+        offset = requests[0].timestamp
+        for (request, original_response) in zip(requests, responses):
+            await wait(request.timestamp - offset, original_response['latency'], loop=loop)
+            offset = request.timestamp
 
-        request_info = extract_vcr_request_info(request)
-        response = await make_request(request_info)
+            request_info = extract_vcr_request_info(request)
+            try:
+                async with session.request(**request_info) as response:
+                    qs = get_query_string(request_info['params'])
+                    logger.info('{request[method]} {request[url]}{qs} - {status}'.format(
+                        request=request_info, status=response.status, qs=qs))
+                    received_response = await extract_response_info(response)
+            except aiohttp.ClientError as e:
+                received_response = extract_error_response_info(request_info, e)
 
-        received_response = await extract_response_info(response)
+            match_on = [m.value for m in config.response_match_on]
+            match = match_responses(original_response, received_response, match_on)
+            logger.info(f'Responses match: {match}')
 
-        match_on = [m.value for m in config.response_match_on]
-        match = match_responses(original_response, received_response, match_on)
-        logger.info(f'Responses match: {match}')
-
-        report.append({
-            'request': request_info,
-            'original_response': original_response,
-            'received_response': received_response,
-            'result': 'Responses {}'.format('match' if match else 'mismatch')
-        })
+            report.append({
+                'request': request_info,
+                'original_response': original_response,
+                'received_response': received_response,
+                'result': 'Responses {}'.format('match' if match else 'mismatch')
+            })
 
 
 def start_client(config):

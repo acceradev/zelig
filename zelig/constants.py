@@ -1,4 +1,4 @@
-from enum import Enum, unique
+from enum import Enum, IntEnum, unique
 
 
 @unique
@@ -32,6 +32,11 @@ class RequestMatchCriteria(Enum):
 class ResponseMatchCriteria(Enum):
     BODY = 'body'
     STATUS = 'status'
+
+
+@unique
+class ErrorCodes(IntEnum):
+    RequestError = 490
 
 
 HEADERS_TO_IGNORE = ['Content-Encoding', 'Content-Length', 'Transfer-Encoding', 'Trailer']
