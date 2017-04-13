@@ -15,9 +15,7 @@ class BaseConfig:
     target_server_base_url = Property('TARGET_SERVER_BASE_URL')
 
     def __init__(self):
-        for k in dir(self):
-            if not k.startswith('__'):
-                getattr(self, k)
+        self.__perform_check()
 
     @property
     def target_server_host(self):
@@ -27,6 +25,11 @@ class BaseConfig:
     @property
     def cassette_file(self):
         return os.path.join(self.base_files_dir, self.cassette_name)
+
+    def __perform_check(self):
+        for k in dir(self):
+            if not k.startswith('__'):
+                getattr(self, k)
 
 
 class ClientConfig(BaseConfig):

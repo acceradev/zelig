@@ -1,6 +1,8 @@
-from zelig.config.factory import ConfigFactory
+from .factory import ConfigFactory
+from .errors import ConfigurationError
 
-__all__ = ['get_config']
+
+__all__ = ['get_config', 'ConfigurationError']
 
 
 def get_config():

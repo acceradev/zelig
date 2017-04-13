@@ -1,21 +1,21 @@
 import asyncio
 import logging
+import urllib.parse
 from urllib.parse import urljoin, urlparse
 
 import aiohttp
 from aiohttp import web
-
 from multidict import MultiDict
 from vcr.errors import UnhandledHTTPRequestError
-from vcr.request import Request
 from vcr.persisters.filesystem import FilesystemPersister
+from vcr.request import Request
 from vcr.serializers import yamlserializer
 from yarl import URL
 
-from zelig.constants import FilteredHeaders
-
+from zelig.constants import HEADERS_TO_IGNORE
 
 logger = logging.getLogger('zelig')
+
 
 async def wait(duration, reserve=0, loop=None):
     sleep = max(0, duration - reserve)
@@ -77,7 +77,7 @@ def load_cassette(path):
 
 
 def filter_response_headers(headers):
-    filtered_headers = [h.value for h in FilteredHeaders]
+    filtered_headers = [h.lower for h in HEADERS_TO_IGNORE]
     return {k: v for k, v in headers.items() if k.lower() not in filtered_headers}
 
 
@@ -89,6 +89,9 @@ async def get_server_response(response):
 async def make_request(request_info):
     async with aiohttp.ClientSession() as session:
         async with session.request(**request_info) as response:
-            logger.debug('Request to {request[method]} {request[url]} {request[params]}: {status}'.format(
-                request=request_info, status=response.status))
+            query_params = request_info['params']
+            qs = f'?{urllib.parse.urlencode(query_params)}' if query_params else ''
+            logger.debug('{request[method]} {request[url]}{qs}: {status}'.format(
+                request=request_info, status=response.status, qs=qs))
+
             return response

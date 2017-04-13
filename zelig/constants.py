@@ -34,9 +34,4 @@ class ResponseMatchCriteria(Enum):
     STATUS = 'status'
 
 
-@unique
-class FilteredHeaders(Enum):
-    CONTENT_ENCODING = 'content-encoding'
-    CONTENT_LENGTH = 'content-length'
-    TRANSFER_ENCODING = 'transfer-encoding'
-    TRAILER = 'trailer'
+HEADERS_TO_IGNORE = ['Content-Encoding', 'Content-Length', 'Transfer-Encoding', 'Trailer']

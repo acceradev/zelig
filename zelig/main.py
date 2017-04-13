@@ -3,6 +3,7 @@ import sys
 
 from zelig import config
 from zelig.client import start_client
+from zelig.config import ConfigurationError
 from zelig.constants import ZeligMode
 from zelig.server import start_server
 
@@ -12,7 +13,12 @@ logging.getLogger('').addHandler(logging.StreamHandler(sys.stdout))
 
 
 def main():
-    conf = config.get_config()
+    try:
+        conf = config.get_config()
+    except ConfigurationError as e:
+        logger.error(f'Configuration error - {e!s}')
+        exit(1)
+
     logger.info('Start zelig in "{mode}" mode'.format(mode=conf.mode.value))
     if conf.mode == ZeligMode.CLIENT:
         # Run coroutine for 'client' mode
