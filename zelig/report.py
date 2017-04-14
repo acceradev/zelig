@@ -63,8 +63,8 @@ class Reporter:
             self.first_request = timestamp
         self.last_request = timestamp
 
-    def _save_report(self, report):
-        report_path = os.path.join(self.directory, f'{self.reports_counter:03}{extension}')
+    def _save_report(self, report, number):
+        report_path = os.path.join(self.directory, f'{number}{extension}')
         logger.debug(f'Saving report to {report_path}')
         save_report(report_path, report)
 
@@ -84,6 +84,8 @@ class Reporter:
         self._update_requests_time()
         self._update_meta()
 
-    def report(self, report):
+    def report(self, report, number=None):
         self.reports_counter += 1
-        self._save_report(report)
+        if not number:
+            number = self.reports_counter
+        self._save_report(report, number)

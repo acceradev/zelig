@@ -21,7 +21,7 @@ async def playback(config, loop, reporter):
 
     async with aiohttp.ClientSession() as session:
         offset = requests[0].timestamp
-        for (request, original_response) in zip(requests, responses):
+        for (i, (request, original_response)) in enumerate(zip(requests, responses), 1):
             await wait(request.timestamp - offset, original_response['latency'], loop=loop)
             offset = request.timestamp
 
@@ -45,7 +45,7 @@ async def playback(config, loop, reporter):
                     'original_response': original_response,
                     'received_response': received_response,
                     'result': 'Responses {}'.format('match' if match else 'mismatch')
-                })
+                }, number=i)
             reporter.record_metadata()
 
 
