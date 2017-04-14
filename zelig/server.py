@@ -19,7 +19,7 @@ from zelig.utils import (
 )
 
 
-async def observe(request, report, cassette):
+async def observe(request, reporter, cassette):
     request_info = await extract_request_info(request)
 
     original_response = get_response_from_cassette(cassette, request_info)
@@ -39,12 +39,13 @@ async def observe(request, report, cassette):
         write_to_log = not match
 
     if write_to_log:
-        report.append({
+        reporter.report({
             'request': request_info,
             'original_response': original_response,
             'received_response': received_response,
             'result': '{} mismatch'.format('Request' if not request_matched else 'Responses')
         })
+    reporter.record_metadata()
     return await get_server_response(response)
 
 
@@ -54,7 +55,7 @@ async def record(request):
     return await get_server_response(response)
 
 async def serve(request):
-    request_info = await extract_request_info(request)
+    request_info = await extract_request_info(request, replace_host=False)
     response = await make_request(request_info)
     await wait(response.latency, loop=request.app.loop)
     return await get_server_response(response)
@@ -111,12 +112,12 @@ def start_server(config):
     # Use ExitStack to optionally enter Reporter context
     with contextlib.ExitStack() as stack:
         request_match_on = [i.value for i in config.request_match_on]
-        cassette = stack.enter_context(vcr.use_cassette(config.cassette_file,
+        cassette = stack.enter_context(vcr.use_cassette(config.cassette_directory,
                                                         record_mode=record_mode.value,
                                                         match_on=request_match_on))
         if mode == ZeligMode.OBSERVE:
-            report = stack.enter_context(Reporter(config.observe_report_file))
-            app.router.add_route('*', '/{path:.*}', functools.partial(observe, cassette=cassette, report=report))
+            reporter = stack.enter_context(Reporter(config.observe_report_directory))
+            app.router.add_route('*', '/{path:.*}', functools.partial(observe, cassette=cassette, reporter=reporter))
         else:
             app.router.add_route('*', '/{path:.*}', functools.partial(request_handler, mode=mode))
 

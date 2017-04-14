@@ -1,13 +1,14 @@
+import json
 import os
+import time
 
 from vcr.serializers.compat import convert_to_unicode
-from vcr.serializers.yamlserializer import serialize
+from vcr.serializers.yamlserializer import serialize, extension
 
 from zelig.log import logger
 
 
 def _write_to_file(path, data):
-    logger.info('Saving report to {path}'.format(path=path))
     dirname, filename = os.path.split(path)
     if dirname and not os.path.exists(dirname):
         os.makedirs(dirname)
@@ -16,7 +17,7 @@ def _write_to_file(path, data):
 
 
 def _prepare_headers(data):
-    data['headers'] = dict(((str(k), [v]) for k, v in data['headers'].items()))
+    data['headers'] = dict(((str(k), v) for k, v in data['headers'].items()))
     return data
 
 
@@ -27,10 +28,9 @@ def _prepare_request(request):
 
 
 def _prepare_report(data):
-    for item in data:
-        item['request'] = convert_to_unicode(_prepare_request(item['request']))
-        item['original_response'] = convert_to_unicode(item['original_response'])
-        item['received_response'] = convert_to_unicode(_prepare_headers(item['received_response']))
+    data['request'] = convert_to_unicode(_prepare_request(data['request']))
+    data['original_response'] = convert_to_unicode(data['original_response'])
+    data['received_response'] = convert_to_unicode(_prepare_headers(data['received_response']))
 
 
 def save_report(report_path, data, root_key='results'):
@@ -40,15 +40,50 @@ def save_report(report_path, data, root_key='results'):
 
 
 class Reporter:
-    def __init__(self, path):
-        self.path = path
-        self.data = []
+    meta_file = '.meta'
+
+    def __init__(self, directory):
+        self.directory = directory
+        self.reports_counter = 0
+        self.total_played = 0
+        self.first_request = None
+        self.last_request = None
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        save_report(self.path, self.data)
+        msg = f'Generated {self.reports_counter} reports.' + \
+              (f' Look to {self.directory} for details' if self.reports_counter else '')
+        logger.info(msg)
 
-    def append(self, item):
-        self.data.append(item)
+    def _update_requests_time(self):
+        timestamp = time.time()
+        if not self.first_request:
+            self.first_request = timestamp
+        self.last_request = timestamp
+
+    def _save_report(self, report):
+        report_path = os.path.join(self.directory, f'{self.reports_counter:03}{extension}')
+        logger.debug(f'Saving report to {report_path}')
+        save_report(report_path, report)
+
+    def _update_meta(self):
+        meta_path = os.path.join(self.directory, self.meta_file)
+        data = {
+            'reports': self.reports_counter,
+            'fist_request': self.first_request,
+            'last_request': self.last_request,
+            'total_played': self.total_played
+        }
+        _write_to_file(meta_path, json.dumps(data))
+
+    def record_metadata(self):
+        self.total_played += 1
+
+        self._update_requests_time()
+        self._update_meta()
+
+    def report(self, report):
+        self.reports_counter += 1
+        self._save_report(report)

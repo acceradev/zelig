@@ -21,7 +21,7 @@ async def wait(duration, reserve=0, loop=None):
     await asyncio.sleep(sleep, loop=loop)
 
 
-async def extract_request_info(request):
+async def extract_request_info(request, replace_host=True):
     request_info = {
         'method': request.method,
         'url': urljoin(request.app.config.target_server_base_url, request.match_info.get('path')),
@@ -30,7 +30,8 @@ async def extract_request_info(request):
         'headers': request.headers,
         'data': await request.read(),
     }
-    request_info['headers']['HOST'] = request.app.config.target_server_host
+    if replace_host:
+        request_info['headers']['HOST'] = request.app.config.target_server_host
     return request_info
 
 
