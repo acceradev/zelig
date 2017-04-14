@@ -1,12 +1,25 @@
-class ResponseMatchers:
+import json
 
+from vcr.request import HeadersDict
+
+
+class ResponseMatchers:
     @staticmethod
     def status(r1, r2):
         return r1.get('status') == r2.get('status')
 
     @staticmethod
     def body(r1, r2):
-        return r1.get('body') == r2.get('body')
+        headers1, headers2 = r1.get('headers'), r2.get('headers')
+        body1, body2 = r1.get('body'), r2.get('body')
+        if headers1 and headers2:
+            type1, type2 = HeadersDict(headers1).get('content-type'), HeadersDict(headers2).get('content-type')
+            if type1.startswith('application/json') and type2.startswith('application/json'):
+                try:
+                    body1, body2 = json.loads(body1['string']), json.loads(body2['string'])
+                except json.JSONDecodeError:
+                    return False
+        return body1 == body2
 
     @staticmethod
     def headers(r1, r2):
