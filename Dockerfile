@@ -1,11 +1,11 @@
 FROM python:3.6.1-alpine
 
-ADD ./requirements.txt /app/requirements.txt
+ADD ./requirements.txt /zelig/requirements.txt
 
-RUN pip install -r /app/requirements.txt
+RUN pip install -r /zelig/requirements.txt
 
-COPY . /app
+COPY . /zelig
 
-ENV PYTHONPATH=$PYTHONPATH:/app
+ENV PYTHONPATH=$PYTHONPATH:/zelig
 
-CMD ["python", "/app/zelig/main.py"]
+CMD ["python", "/zelig/zelig/main.py"]

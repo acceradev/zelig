@@ -30,12 +30,12 @@ async def observe(request, reporter, cassette):
 
     received_response = await extract_response_info(response)
 
-    logger.info(f'Request already exist: {request_matched}')
+    logger.debug(f'Request already exist: {request_matched}')
     if request_matched:
         # Match responses only when request matched
         matchers = [v.value for v in request.app.config.response_match_on]
         match = match_responses(original_response, received_response, matchers)
-        logger.info(f'Responses match: {match}')
+        logger.debug(f'Responses match: {match}')
         write_to_log = not match
 
     if write_to_log:
@@ -44,7 +44,7 @@ async def observe(request, reporter, cassette):
             'original_response': original_response,
             'received_response': received_response,
             'result': '{} mismatch'.format('Request' if not request_matched else 'Responses')
-        })
+        }, request_index=cassette.length)
     reporter.record_metadata()
     return await get_server_response(response)
 

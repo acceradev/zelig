@@ -17,7 +17,7 @@ async def playback(config, loop, reporter):
     except ValueError as e:
         logger.warning(f'Error while loading cassette: {str(e)}')
         return
-    logger.info('Loaded {n} request-response pairs'.format(n=len(requests)))
+    logger.info(f'Loaded {len(requests)} request-response pairs')
 
     async with aiohttp.ClientSession() as session:
         offset = requests[0].timestamp
@@ -38,14 +38,14 @@ async def playback(config, loop, reporter):
 
             match_on = [m.value for m in config.response_match_on]
             match = match_responses(original_response, received_response, match_on)
-            logger.info(f'Responses match: {match}')
+            logger.debug(f'Responses match: {match}')
             if not match:
                 reporter.report({
                     'request': request_info,
                     'original_response': original_response,
                     'received_response': received_response,
                     'result': 'Responses {}'.format('match' if match else 'mismatch')
-                }, number=i)
+                }, request_index=i)
             reporter.record_metadata()
 
 
