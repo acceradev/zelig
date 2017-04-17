@@ -116,7 +116,7 @@ def start_server(config):
                                                         record_mode=record_mode.value,
                                                         match_on=request_match_on))
         if mode == ZeligMode.OBSERVE:
-            reporter = stack.enter_context(Reporter(config.observe_report_directory))
+            reporter = stack.enter_context(Reporter(config.observe_report_directory, mode=mode))
             app.router.add_route('*', '/{path:.*}', functools.partial(observe, cassette=cassette, reporter=reporter))
         else:
             app.router.add_route('*', '/{path:.*}', functools.partial(request_handler, mode=mode))

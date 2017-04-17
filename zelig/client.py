@@ -2,6 +2,7 @@ import asyncio
 
 import aiohttp
 
+from zelig.constants import ZeligMode
 from zelig.log import logger
 from zelig.matchers import match_responses
 from zelig.report import Reporter
@@ -50,7 +51,7 @@ async def playback(config, loop, reporter):
 
 
 def start_playback(config):
-    with Reporter(config.playback_report_directory) as reporter:
+    with Reporter(config.playback_report_directory, mode=ZeligMode.PLAYBACK) as reporter:
         loop = asyncio.get_event_loop()
         loop.run_until_complete(playback(config, loop, reporter))
         loop.close()

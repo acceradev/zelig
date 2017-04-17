@@ -3,11 +3,13 @@ One tool to test all your APIs
 
 ### Description
 Zelig provides a possibility to test your local and remote APIs.
-It could work in 4 modes:
+It could work in 5 modes:
  * `record`
  * `serve`
  * `playback`
  * `observe`
+ * `summary`
+
 
 #### Record
 In `record` mode Zelig propagates all incoming requests to the specified server. Also it logs all request-response pairs.
@@ -18,6 +20,8 @@ the connection on unknown requests.
 In `playback` mode Zelig reads all recorded request-response pairs and send all requests again. Then it compares old and new responses and logs mismatches
 #### Observe
 In `observe` mode Zelig works like in `record` mode, but it also logs all unknown incoming requests and all mismatched responses.
+#### Summary
+In `summary` mode Zelig prints metadata that was saved during run of `playback` or `observe` modes. This data is stored in `.meta` file in the report's directory.
 
 ### How to use
 Zelig can be configured using some environment variables:
@@ -35,43 +39,52 @@ Zelig can be configured using some environment variables:
 
 Also you should map your local directory to `/files` directory inside container. This directory will contain all logs writen by Zelig.
 
+_Note_: `summary` mode does not require any env variables.
+
 ### Notes
 1. Zelig will interrupt connection in `serve` mode if incoming request is unknown so you need to handle connection errors. It also will save log as for the usual request but will use 490 response code to signal that request was not recognized.
 2. Zelig always force error responses to not match each other. So if we recorded error in `record` mode and then encountered the same error in `playback` or `observe` modes report will be generated.
 
 ### How to build from sources
+**For all modes except `summary`**
 1. Install Docker
 2. Clone project from Github: `git clone https://github.com/acceradev/zelig.git <directory>` or `git clone git@github.com:acceradev/zelig.git <directory>`. Project will be cloned to the specified `<directory>`
 3. Navigate to the `<directory>`.
 4. Run `docker build . -t zelig --no-cache`. This will build a docker image with a name `zelig` from sources.
 5. Run `docker run -v <files_directory>:/files -p <host_port>:<container_port> --env-file ./env --name <container_name> zelig`
-  * `<files_direcotry>` is a directory that is required by Zelig to store cassette/reports,
-  * `<host_port>` is a port on the host machine that will be used to communicate with Zelig.
-  * `<container_port>` is a port inside the container. It should be equal to the `ZELIG_PORT` env variable if it specified (default is 8081).
-  * `env` is a name of file that contains environment variables which Zelig use.
-  * `--name <container_name>` specifies the name of container that docker will run. Can be safely omitted - docker will generate it.
+   * `<files_direcotry>` is a directory that is required by Zelig to store cassette/reports,
+   * `<host_port>` is a port on the host machine that will be used to communicate with Zelig.
+   * `<container_port>` is a port inside the container. It should be equal to the `ZELIG_PORT` env variable if it specified (default is 8081).
+   * `env` is a name of file that contains environment variables which Zelig use.
+   * `--name <container_name>` specifies the name of container that docker will run. Can be safely omitted - docker will generate it.
 6. Add `-d` after `docker run` if you want to run container as daemon. You can use `docker logs <container_name>` to get container output. You also can use `docker attach <container_name>` to attach console to container output
 
 _Alternatively_
 
 5. Use docker-compose file to run container.
-  * Install docker-compose
-  * Save this to `docker-compose.yml`
-    ```yaml
-    version: "3"
-    services:
-        z1:
-            image: zelig:latest
-            hostname: z1
-            ports: ["8081:8081"]
-            volumes:
-                - /home/tmp/zelig-test/test_files:/files
-            environment:
-                - ZELIG_MODE=record
-                - TARGET_SERVER_BASE_URL=http://www.httpbin.org
-                - DEBUG=1
-    ```
-    _Notes_:
-      1. All required environment variables should be added to `environment` section.
-      2. Specify `ports` section as `["<host_port>":"<container_port>"]`
-  * Execute `docker-compose up`
+   * Install docker-compose
+   * Save this to `docker-compose.yml`
+        ```yaml
+        version: "3"
+        services:
+            z1:
+                image: zelig:latest
+                hostname: z1
+                ports: ["8081:8081"]
+                volumes:
+                    - /home/tmp/zelig-test/test_files:/files
+                environment:
+                    - ZELIG_MODE=record
+                    - TARGET_SERVER_BASE_URL=http://www.httpbin.org
+                    - DEBUG=1
+        ```
+     _Notes_:
+       1. All required environment variables should be added to `environment` section.
+       2. Specify `ports` section as `["<host_port>":"<container_port>"]`
+   * Execute `docker-compose up`
+
+**For `summary` mode**
+1. Repeat 1-4
+2. Execute `docker run -v <files_directory>:/files zelig summary <report_directory>`
+   * `<files_directory>` is a directory on local machine which contains zelig reports
+   * `<report_directory>` is a name of directory that contain reports. This directory must contain `.meta` file

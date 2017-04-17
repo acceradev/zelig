@@ -40,3 +40,7 @@ class ErrorCodes(IntEnum):
 
 
 HEADERS_TO_IGNORE = ['Content-Encoding', 'Content-Length', 'Transfer-Encoding', 'Trailer']
+
+FILES_DIRECTORY = '/files'
+METADATA_FILE = '.meta'
+SUMMARY_ARGUMENT = 'summary'

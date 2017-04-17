@@ -1,4 +1,5 @@
 # This file stores environment variables that Zelig use.
 # Look to README's 'How to use' section for more information about supported variables
+
 ZELIG_MODE=record
 TARGET_SERVER_BASE_URL=http://services.groupkt.com/

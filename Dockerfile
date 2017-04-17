@@ -8,4 +8,4 @@ COPY . /zelig
 
 ENV PYTHONPATH=$PYTHONPATH:/zelig
 
-CMD ["python", "/zelig/zelig/main.py"]
+ENTRYPOINT ["python", "/zelig/zelig/main.py"]

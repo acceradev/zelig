@@ -5,6 +5,7 @@ import time
 from vcr.serializers.compat import convert_to_unicode
 from vcr.serializers.yamlserializer import serialize, extension
 
+from zelig.constants import METADATA_FILE
 from zelig.log import logger
 
 
@@ -40,16 +41,17 @@ def save_report(report_path, data, root_key='results'):
 
 
 class Reporter:
-    meta_file = '.meta'
 
-    def __init__(self, directory):
+    def __init__(self, directory, mode):
         self.directory = directory
+        self.mode = mode
         self.reports_counter = 0
         self.total_played = 0
-        self.first_request = None
-        self.last_request = None
+        self.started = None
+        self.finished = None
 
     def __enter__(self):
+        self.started = time.time()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -58,10 +60,7 @@ class Reporter:
         logger.info(msg)
 
     def _update_requests_time(self):
-        timestamp = time.time()
-        if not self.first_request:
-            self.first_request = timestamp
-        self.last_request = timestamp
+        self.finished = time.time()
 
     def _save_report(self, report, index):
         report_path = os.path.join(self.directory, f'{index}{extension}')
@@ -69,12 +68,13 @@ class Reporter:
         save_report(report_path, report)
 
     def _update_meta(self):
-        meta_path = os.path.join(self.directory, self.meta_file)
+        meta_path = os.path.join(self.directory, METADATA_FILE)
         data = {
-            'reports': self.reports_counter,
-            'fist_request': self.first_request,
-            'last_request': self.last_request,
-            'total_played': self.total_played
+            'reports_number': self.reports_counter,
+            'started': self.started,
+            'finished': self.finished,
+            'total_played': self.total_played,
+            'mode': self.mode.value
         }
         _write_to_file(meta_path, json.dumps(data))
 
