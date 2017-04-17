@@ -53,6 +53,7 @@ Also you should map your local directory to `/files` directory inside container.
 6. Add `-d` after `docker run` if you want to run container as daemon. You can use `docker logs <container_name>` to get container output. You also can use `docker attach <container_name>` to attach console to container output
 
 _Alternatively_
+
 5. Use docker-compose file to run container.
   * Install docker-compose
   * Save this to `docker-compose.yml`
