@@ -44,11 +44,33 @@ Also you should map your local directory to `/files` directory inside container.
 2. Clone project from Github: `git clone https://github.com/acceradev/zelig.git <directory>` or `git clone git@github.com:acceradev/zelig.git <directory>`. Project will be cloned to the specified `<directory>`
 3. Navigate to the `<directory>`.
 4. Run `docker build . -t zelig --no-cache`. This will build a docker image with a name `zelig` from sources.
-5. Run `docker run -v <directory>:/zelig -v <files_directory>:/files -p <host_port>:<container_port> --env-file ./env --name <container_name> zelig`
-  * `<directory>` is a directory where the project was cloned.
+5. Run `docker run -v <files_directory>:/files -p <host_port>:<container_port> --env-file ./env --name <container_name> zelig`
   * `<files_direcotry>` is a directory that is required by Zelig to store cassette/reports,
   * `<host_port>` is a port on the host machine that will be used to communicate with Zelig.
   * `<container_port>` is a port inside the container. It should be equal to the `ZELIG_PORT` env variable if it specified (default is 8081).
   * `env` is a name of file that contains environment variables which Zelig use.
   * `--name <container_name>` specifies the name of container that docker will run. Can be safely omitted - docker will generate it.
 6. Add `-d` after `docker run` if you want to run container as daemon. You can use `docker logs <container_name>` to get container output. You also can use `docker attach <container_name>` to attach console to container output
+
+_Alternatively_
+5. Use docker-compose file to run container.
+  * Install docker-compose
+  * Save this to `docker-compose.yml`
+    ```yaml
+    version: "3"
+    services:
+        z1:
+            image: zelig:latest
+            hostname: z1
+            ports: ["8081:8081"]
+            volumes:
+                - /home/tmp/zelig-test/test_files:/files
+            environment:
+                - ZELIG_MODE=record
+                - TARGET_SERVER_BASE_URL=http://www.httpbin.org
+                - DEBUG=1
+    ```
+    _Notes_:
+      1. All required environment variables should be added to `environment` section.
+      2. Specify `ports` section as `["<host_port>":"<container_port>"]`
+  * Execute `docker-compose up`
