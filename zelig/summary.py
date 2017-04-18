@@ -31,7 +31,7 @@ def print_summary(args):
                 except json.JSONDecodeError as e:
                     logger.error(f'Could not read metadata file. {e!s}')
         else:
-            logger.error(f'Could not find metadata file. Check if you\'ve mounted \'{FILES_DIRECTORY}\' folder'
+            logger.error(f'Could not find metadata file. Check if you\'ve mounted \'{FILES_DIRECTORY}\' directory'
                          f' and \'{METADATA_FILE}\' file exists')
     else:
         logger.error(f'Could not parse arguments "{args}". Please use "zelig summary <folder_name>" command')
