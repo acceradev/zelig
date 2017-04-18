@@ -7,16 +7,16 @@ from zelig.log import logger
 from zelig.matchers import match_responses
 from zelig.report import Reporter
 from zelig.utils import (
-    load_cassette, extract_vcr_request_info, wait, extract_response_info, extract_error_response_info, get_query_string
+    load_data, extract_vcr_request_info, wait, extract_response_info, extract_error_response_info, get_query_string
 )
 
 
 async def playback(config, loop, reporter):
-    logger.info('Loading cassette {cassette}'.format(cassette=config.cassette_directory))
+    logger.info('Loading data {data}'.format(data=config.data_directory))
     try:
-        requests, responses = load_cassette(config.cassette_directory)
+        requests, responses = load_data(config.data_directory)
     except ValueError as e:
-        logger.warning(f'Error while loading cassette: {str(e)}')
+        logger.error(f'Error while loading data: {str(e)}')
         return
     logger.info(f'Loaded {len(requests)} request-response pairs')
 

@@ -72,19 +72,19 @@ def extract_error_response_info(request_info, error):
     }
 
 
-def get_response_from_cassette(cassette, request_info):
+def get_response_from_data(data, request_info):
     request = Request(method=request_info['method'],
                       uri=str(URL(request_info['url']).with_query(request_info['params'])),
                       body=request_info['data'],
                       headers=request_info['headers'])
     try:
-        responses = cassette.responses_of(request)
+        responses = data.responses_of(request)
     except UnhandledHTTPRequestError:
         return None
     return responses[0]
 
 
-def load_cassette(path):
+def load_data(path):
     return FilesystemPersister.load_cassette(path, yamlserializer)
 
 
