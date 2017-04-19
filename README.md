@@ -77,6 +77,4 @@ Example `docker-compose.yml` file
 ### How to build container from sources
 1. [Install Docker](https://docs.docker.com/engine/installation/#platform-support-matrix)
 2. Clone project from Github: `git clone https://github.com/acceradev/zelig.git <directory>` or `git clone git@github.com:acceradev/zelig.git <directory>`. Project will be cloned to the specified `<directory>`
-3. Run `docker build -f <directory>/Dockerfile -t zelig --no-cache`. This will build a docker image with a name `zelig` from sources.
-
-
+3. Run `docker build -t zelig --no-cache <directory>`. This will build a docker image with a name `zelig` from sources.
