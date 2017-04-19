@@ -1,7 +1,6 @@
 import asyncio
 import contextlib
 import functools
-import logging
 import signal
 
 import vcr
@@ -80,7 +79,8 @@ def start(app):
     handler = app.make_handler(loop=loop)
     f = loop.create_server(handler, app.config.zelig_host, app.config.zelig_port)
     srv = loop.run_until_complete(f)
-    logging.info('Serving on', srv.sockets[0].getsockname())
+    host, port = srv.sockets[0].getsockname()
+    logger.info(f'Serving on {host}:{port}')
 
     async def graceful_shutdown():
         srv.close()
