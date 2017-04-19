@@ -52,29 +52,26 @@ Also you should map your local directory to `/files` directory inside container.
 2. Zelig always force error responses to not match each other. So if we recorded error in `record` mode and then encountered the same error in `playback` or `observe` modes report will be generated.
 
 ### How to build container from sources
-1. Install Docker
+1. [Install Docker](https://docs.docker.com/engine/installation/#platform-support-matrix)
 2. Clone project from Github: `git clone https://github.com/acceradev/zelig.git <directory>` or `git clone git@github.com:acceradev/zelig.git <directory>`. Project will be cloned to the specified `<directory>`
 3. Navigate to the `<directory>`.
 4. Run `docker build . -t zelig --no-cache`. This will build a docker image with a name `zelig` from sources.
-5. Run `docker run -v <files_directory>:/files -p <host_port>:<container_port> --env-file ./env --name <container_name> zelig`
+5. Run `docker run -v <files_directory>:/files -p <host_port>:<container_port> --env-file ./env zelig`
    * `<files_direcotry>` is a directory that is required by Zelig to store data/reports,
    * `<host_port>` is a port on the host machine that will be used to communicate with Zelig.
-   * `<container_port>` is a port inside the container. It should be equal to the `ZELIG_PORT` env variable if it specified (default is 8081).
+   * `<container_port>` is a port inside the container. It should be equal to the `ZELIG_PORT` env variable if it specified (default is `8081`).
    * `env` is a name of file that contains environment variables which Zelig use.
-   * `--name <container_name>` specifies the name of container that docker will run. Can be safely omitted - docker will generate it.
-6. Add `-d` after `docker run` if you want to run container as daemon. You can use `docker logs <container_name>` to get container output. You also can use `docker attach <container_name>` to attach console to container output
 
 _Alternatively_
 
 5. Use docker-compose file to run container.
-   * Install docker-compose
+   * [Install docker-compose](https://docs.docker.com/compose/install/)
    * Save this to `docker-compose.yml`
         ```yaml
         version: "3"
         services:
             z1:
                 image: zelig:latest
-                hostname: z1
                 ports: ["8081:8081"]
                 volumes:
                     - ~/tmp/zelig-test/test_files:/files
