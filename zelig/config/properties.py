@@ -34,7 +34,7 @@ class Property:
         if self.key in os.environ:
             value = os.environ[self.key]
         else:
-            logger.warning(f'Param \'{self.key}\' is not provided, using default value \'{self.default}\'')
+            logger.info(f'Param \'{self.key}\' is not provided, using default value \'{self.default}\'')
             value = self.default
         return self.clean(value)
 
