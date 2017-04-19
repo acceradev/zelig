@@ -25,10 +25,6 @@ You can see human readable tests summary by running following command
 ```bash
 docker run -v <files_directory>:/files zelig summary <report_folder>
 ```
-*example*
-```bash
-docker run -v ~/tmp/zelig-test:/files zelig summary playback_report_2017-04-19_08-37-39
-```
 
 ### How to use
 Run `docker run -v <files_directory>:/files -p <host_port>:<container_port> --env-file ./env zelig`
@@ -36,9 +32,6 @@ Run `docker run -v <files_directory>:/files -p <host_port>:<container_port> --en
  * `<host_port>` is a port on the host machine that will be used to communicate with Zelig.
  * `<container_port>` is a port inside the container. It should be equal to the `ZELIG_PORT` env variable if it specified (default is `8081`).
  * `env` is a name of file that contains environment variables which Zelig use.
-
-
-
 
 
 Zelig can be configured using environment variables:
