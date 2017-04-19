@@ -1,17 +1,29 @@
 import json
 import os
+import random
+import string
 import time
 
 from vcr.serializers.compat import convert_to_unicode
 from vcr.serializers.yamlserializer import serialize, extension
 
+from zelig.constants import METADATA_FILE
 from zelig.log import logger
 
 
-def _write_to_file(path, data):
+def _generate_unique_path(path):
+    filename, ext = os.path.splitext(path)
+    appendix = ''.join(random.choice(string.ascii_lowercase) for _ in range(5))
+    return f'{filename}_{appendix}{ext}'
+
+
+def _write_to_file(path, data, rewrite=False):
     dirname, filename = os.path.split(path)
     if dirname and not os.path.exists(dirname):
         os.makedirs(dirname)
+    if not rewrite and os.path.exists(path):
+        path = _generate_unique_path(path)
+    logger.debug(f'Saving to {path}')
     with open(path, 'w') as f:
         f.write(data)
 
@@ -40,16 +52,17 @@ def save_report(report_path, data, root_key='results'):
 
 
 class Reporter:
-    meta_file = '.meta'
 
-    def __init__(self, directory):
+    def __init__(self, directory, mode):
         self.directory = directory
+        self.mode = mode
         self.reports_counter = 0
         self.total_played = 0
-        self.first_request = None
-        self.last_request = None
+        self.started = None
+        self.finished = None
 
     def __enter__(self):
+        self.started = time.time()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -58,25 +71,22 @@ class Reporter:
         logger.info(msg)
 
     def _update_requests_time(self):
-        timestamp = time.time()
-        if not self.first_request:
-            self.first_request = timestamp
-        self.last_request = timestamp
+        self.finished = time.time()
 
-    def _save_report(self, report):
-        report_path = os.path.join(self.directory, f'{self.reports_counter:03}{extension}')
-        logger.debug(f'Saving report to {report_path}')
+    def _save_report(self, report, index):
+        report_path = os.path.join(self.directory, f'{index:03}{extension}')
         save_report(report_path, report)
 
     def _update_meta(self):
-        meta_path = os.path.join(self.directory, self.meta_file)
+        meta_path = os.path.join(self.directory, METADATA_FILE)
         data = {
-            'reports': self.reports_counter,
-            'fist_request': self.first_request,
-            'last_request': self.last_request,
-            'total_played': self.total_played
+            'reports_number': self.reports_counter,
+            'started': self.started,
+            'finished': self.finished,
+            'total_played': self.total_played,
+            'mode': self.mode.value
         }
-        _write_to_file(meta_path, json.dumps(data))
+        _write_to_file(meta_path, json.dumps(data), rewrite=True)
 
     def record_metadata(self):
         self.total_played += 1
@@ -84,6 +94,8 @@ class Reporter:
         self._update_requests_time()
         self._update_meta()
 
-    def report(self, report):
+    def report(self, report, request_index=None):
         self.reports_counter += 1
-        self._save_report(report)
+        if not request_index:
+            request_index = self.reports_counter
+        self._save_report(report, request_index)

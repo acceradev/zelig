@@ -10,16 +10,19 @@ class ResponseMatchers:
 
     @staticmethod
     def body(r1, r2):
-        headers1, headers2 = r1.get('headers'), r2.get('headers')
         body1, body2 = r1.get('body'), r2.get('body')
-        if headers1 and headers2:
-            type1, type2 = HeadersDict(headers1).get('content-type'), HeadersDict(headers2).get('content-type')
-            if type1.startswith('application/json') and type2.startswith('application/json'):
-                try:
-                    body1, body2 = json.loads(body1['string']), json.loads(body2['string'])
-                except json.JSONDecodeError:
-                    return False
-        return body1 == body2
+        match = body1 == body2
+        if not match:
+            headers1, headers2 = r1.get('headers'), r2.get('headers')
+            if headers1 and headers2:
+                type1, type2 = HeadersDict(headers1).get('content-type'), HeadersDict(headers2).get('content-type')
+                if type1.startswith('application/json') and type2.startswith('application/json'):
+                    try:
+                        body1, body2 = json.loads(body1['string']), json.loads(body2['string'])
+                        match = body1 == body2
+                    except json.JSONDecodeError:
+                        pass
+        return match
 
     @staticmethod
     def headers(r1, r2):
