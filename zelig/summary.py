@@ -19,8 +19,10 @@ def get_summary_text(mode, report_dir, total_played, reports_number, started, fi
 
 
 def print_summary(args):
-    if len(args) == 2 and args[0] == SUMMARY_ARGUMENT:
-        report_dir = args[1]
+    summary_arg_index = args.index(SUMMARY_ARGUMENT)
+    directory_arg_index = summary_arg_index + 1
+    if directory_arg_index < len(args):
+        report_dir = args[directory_arg_index]
         metadata_path = os.path.join(FILES_DIRECTORY, report_dir, METADATA_FILE)
         if os.path.exists(metadata_path):
             with open(metadata_path, 'r') as f:

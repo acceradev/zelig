@@ -3,7 +3,7 @@ import sys
 from zelig import config
 from zelig.client import start_playback
 from zelig.config import ConfigurationError
-from zelig.constants import ZeligMode
+from zelig.constants import ZeligMode, SUMMARY_ARGUMENT
 from zelig.server import start_server
 from zelig.summary import print_summary
 from zelig.log import logger
@@ -26,11 +26,11 @@ def start_zelig():
 
 
 def main():
-    arguments = sys.argv[1:]
-    if not arguments:
-        start_zelig()
+    if SUMMARY_ARGUMENT in sys.argv:
+        print_summary(sys.argv[1:])
     else:
-        print_summary(arguments)
+        start_zelig()
+
 
 if __name__ == '__main__':
     main()
