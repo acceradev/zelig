@@ -44,7 +44,7 @@ async def observe(request, reporter, requests_data):
             'original_response': original_response,
             'received_response': received_response,
             'result': '{} mismatch'.format('Request' if not request_matched else 'Responses')
-        }, request_index=requests_data.length)
+        }, request_index=original_response['index'] if original_response else requests_data.length)
     reporter.record_metadata()
     return await get_server_response(response)
 

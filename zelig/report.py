@@ -1,5 +1,7 @@
 import json
 import os
+import random
+import string
 import time
 
 from vcr.serializers.compat import convert_to_unicode
@@ -9,10 +11,19 @@ from zelig.constants import METADATA_FILE
 from zelig.log import logger
 
 
-def _write_to_file(path, data):
+def _generate_unique_path(path):
+    filename, ext = os.path.splitext(path)
+    appendix = ''.join(random.choice(string.ascii_lowercase) for _ in range(5))
+    return f'{filename}_{appendix}{ext}'
+
+
+def _write_to_file(path, data, rewrite=False):
     dirname, filename = os.path.split(path)
     if dirname and not os.path.exists(dirname):
         os.makedirs(dirname)
+    if not rewrite and os.path.exists(path):
+        path = _generate_unique_path(path)
+    logger.debug(f'Saving to {path}')
     with open(path, 'w') as f:
         f.write(data)
 
@@ -63,8 +74,7 @@ class Reporter:
         self.finished = time.time()
 
     def _save_report(self, report, index):
-        report_path = os.path.join(self.directory, f'{index}{extension}')
-        logger.debug(f'Saving report to {report_path}')
+        report_path = os.path.join(self.directory, f'{index:03}{extension}')
         save_report(report_path, report)
 
     def _update_meta(self):
@@ -76,7 +86,7 @@ class Reporter:
             'total_played': self.total_played,
             'mode': self.mode.value
         }
-        _write_to_file(meta_path, json.dumps(data))
+        _write_to_file(meta_path, json.dumps(data), rewrite=True)
 
     def record_metadata(self):
         self.total_played += 1
